@@ -126,6 +126,23 @@ enum DailyUsagePlanEvaluator {
     }
 }
 
+private struct DashboardSidebarLabel: View {
+    @Environment(\.controlActiveState) private var controlActiveState
+    let title: String
+    let symbolName: String
+    let isSelected: Bool
+    let isFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbolName).frame(width: 18)
+            Text(title)
+        }
+        .foregroundStyle(isSelected && isFocused && controlActiveState == .key
+            ? Color(nsColor: .selectedControlTextColor) : Color.primary)
+    }
+}
+
 struct PoolDashboardView: View {
     private struct RuntimeOwnedSnapshotStore: AccountPoolStoring {
         func load() -> AccountPoolSnapshot? { nil }
@@ -138,50 +155,7 @@ struct PoolDashboardView: View {
     }
     private enum ResponsiveLayout {
         static let contentHorizontalPadding: CGFloat = 16
-        static let dashboardChromeStackBreakpoint: CGFloat = 1_000
         static let workspaceContentStackBreakpoint: CGFloat = 1_000
-    }
-    private enum WorkspaceDrawerState {
-        case collapsed
-        case partial
-        case expanded
-
-        var isVisible: Bool {
-            self != .collapsed
-        }
-
-        var symbolName: String {
-            switch self {
-            case .collapsed:
-                return "chevron.right"
-            case .partial:
-                return "chevron.up"
-            case .expanded:
-                return "chevron.down"
-            }
-        }
-
-        var actionTitleKey: String {
-            switch self {
-            case .collapsed:
-                return "drawer.expand"
-            case .partial:
-                return "drawer.expand_full"
-            case .expanded:
-                return "drawer.collapse"
-            }
-        }
-
-        func next() -> WorkspaceDrawerState {
-            switch self {
-            case .collapsed:
-                return .partial
-            case .partial:
-                return .expanded
-            case .expanded:
-                return .collapsed
-            }
-        }
     }
     private enum AuthMethod: String, CaseIterable, Identifiable {
         case oauth
@@ -378,6 +352,7 @@ struct PoolDashboardView: View {
     @AppStorage(Self.authenticationMethodKey) private var selectedAuthMethodRaw = AuthMethod.oauth.rawValue
     @AppStorage(Self.relayPreserveOfficialAuthKey) private var relayPreserveOfficialAuth = false
     @Environment(\.colorScheme) private var colorScheme
+    @FocusState private var sidebarHasFocus: Bool
     @State private var state: AccountPoolState
     @State private var formState = PoolDashboardFormState()
     @State private var canAddRelayAccount = false
@@ -387,10 +362,9 @@ struct PoolDashboardView: View {
     @State private var localOAuthImportViewModel = LocalOAuthImportViewModel()
     @State private var importingLocalOAuthAccountID: String?
     @State private var sessionAuthorizedAuthFileURL: URL?
-    @State private var selectedWorkspace: Workspace = .authentication
+    @State private var selectedWorkspace: Workspace = .overview
     @State private var selectedGroupName: String = AgentAccount.defaultGroupName
-    @State private var workspaceDrawerState: WorkspaceDrawerState = .partial
-    @State private var isSidebarCollapsed = false
+    @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
     @State private var isApplyingRuntimeStateUpdate = false
     @State private var lastHandledRuntimeSyncOutcomeID: UUID?
     @State private var themeRenderToken = 0
@@ -500,6 +474,7 @@ struct PoolDashboardView: View {
     }
 
     private enum Workspace: String, CaseIterable, Identifiable {
+        case overview
         case authentication
         case runtime
         case schedule
@@ -513,6 +488,7 @@ struct PoolDashboardView: View {
 
         var title: String {
             switch self {
+            case .overview: L10n.text("workspace.overview.title")
             case .authentication: L10n.text("workspace.authentication.title")
             case .runtime: L10n.text("workspace.runtime.title")
             case .schedule: L10n.text("workspace.schedule.title")
@@ -526,6 +502,7 @@ struct PoolDashboardView: View {
 
         var subtitle: String {
             switch self {
+            case .overview: L10n.text("workspace.overview.subtitle")
             case .authentication: L10n.text("workspace.authentication.subtitle")
             case .runtime: L10n.text("workspace.runtime.subtitle")
             case .schedule: L10n.text("workspace.schedule.subtitle")
@@ -539,6 +516,7 @@ struct PoolDashboardView: View {
 
         var symbolName: String {
             switch self {
+            case .overview: "square.grid.2x2"
             case .authentication: "person.badge.key"
             case .runtime: "dial.medium"
             case .schedule: "calendar.badge.clock"
@@ -579,34 +557,9 @@ struct PoolDashboardView: View {
 
     var body: some View {
         ZStack {
-            PoolDashboardTheme.backgroundGradient
-                .ignoresSafeArea()
-            Circle()
-                .fill(PoolDashboardTheme.glowA.opacity(PoolDashboardTheme.glowAOpacity))
-                .frame(width: PoolDashboardTheme.glowLargeSize, height: PoolDashboardTheme.glowLargeSize)
-                .blur(radius: PoolDashboardTheme.glowLargeBlur)
-                .offset(x: -300, y: -260)
-                .allowsHitTesting(false)
-            Circle()
-                .fill(PoolDashboardTheme.glowB.opacity(PoolDashboardTheme.glowBOpacity))
-                .frame(width: PoolDashboardTheme.glowMediumSize, height: PoolDashboardTheme.glowMediumSize)
-                .blur(radius: PoolDashboardTheme.glowMediumBlur)
-                .offset(x: 340, y: 220)
-                .allowsHitTesting(false)
-            Rectangle()
-                .fill(
-                    RadialGradient(
-                        colors: [.clear, PoolDashboardTheme.vignetteEndColor],
-                        center: .center,
-                        startRadius: 120,
-                        endRadius: 920
-                    )
-                )
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+            Color(nsColor: .windowBackgroundColor).ignoresSafeArea()
 
             dashboardContent
-                .id(themeRenderToken)
 
             if let appUpdatePrompt {
                 appUpdateOverlay(prompt: appUpdatePrompt)
@@ -662,7 +615,7 @@ struct PoolDashboardView: View {
         }
         .onChange(of: isDeveloperBuild) { _, isEnabled in
             if !isEnabled && selectedWorkspace == .developer {
-                selectedWorkspace = .authentication
+                selectedWorkspace = .overview
             }
         }
         .onChange(of: developerMockModeEnabled) { _, _ in
@@ -735,103 +688,75 @@ struct PoolDashboardView: View {
     }
 
     private var dashboardContent: some View {
-        HStack(alignment: .top, spacing: 0) {
-            Group {
-                if isSidebarCollapsed {
-                    collapsedSidebarHandle
-                } else {
-                    workspaceSidebar
-                }
-            }
-
-            Rectangle()
-                .fill(PoolDashboardTheme.panelInnerStroke.opacity(0.85))
-                .frame(width: 1)
-                .frame(maxHeight: .infinity)
-
+        NavigationSplitView(columnVisibility: $sidebarVisibility) {
+            workspaceSidebar
+                .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
+        } detail: {
             GeometryReader { contentGeometry in
                 dashboardMainColumn(
-                    viewportWidth: contentGeometry.size.width,
-                    viewportHeight: contentGeometry.size.height
+                    viewportWidth: contentGeometry.size.width
                 )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(PoolDashboardTheme.panelStrongFill.opacity(PoolDashboardTheme.chromeBaseOpacity))
-        #if canImport(AppKit)
-        .environment(\.controlActiveState, .active)
-        #endif
+        .navigationSplitViewStyle(.balanced)
         .groupBoxStyle(DashboardGroupBoxStyle())
         .animation(.easeInOut(duration: PoolDashboardTheme.standardAnimationDuration), value: state.mode)
         .animation(.easeInOut(duration: PoolDashboardTheme.fastAnimationDuration), value: viewState.showUsageRawJSON)
         .animation(.easeInOut(duration: PoolDashboardTheme.fastAnimationDuration), value: viewState.showSwitchLaunchLog)
-        .animation(.easeInOut(duration: PoolDashboardTheme.fastAnimationDuration), value: selectedWorkspace)
     }
 
     private func dashboardMainColumn(
-        viewportWidth: CGFloat,
-        viewportHeight: CGFloat
+        viewportWidth: CGFloat
     ) -> some View {
         let safeViewportWidth = max(0, viewportWidth)
         let contentWidth = Self.contentWidth(for: safeViewportWidth)
 
         return VStack(alignment: .leading, spacing: 0) {
-            ScrollView(showsIndicators: false) {
-                dashboardScrollableContent(availableWidth: contentWidth)
-                    .frame(width: contentWidth, alignment: .leading)
-                    .padding(.horizontal, ResponsiveLayout.contentHorizontalPadding)
-                    .padding(.top, 14)
-                    .padding(.bottom, 10)
-                    .frame(width: safeViewportWidth, alignment: .leading)
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(selectedWorkspace.title)
+                        .font(.title2.weight(.semibold))
+                    Text(selectedWorkspace.subtitle)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 12)
+                if selectedWorkspace == .overview {
+                    Button {
+                        selectedWorkspace = .authentication
+                    } label: {
+                        Label(L10n.text("workspace.add_account"), systemImage: "plus")
+                    }
+                    .controlSize(.large)
+                    .accessibilityIdentifier("dashboard.addAccount")
+                }
             }
-            .frame(width: safeViewportWidth, alignment: .leading)
-
-            workspaceCollapseToggle()
-                .padding(.horizontal, ResponsiveLayout.contentHorizontalPadding)
-                .padding(.bottom, 10)
-                .background(
-                    PoolDashboardTheme.panelStrongFill.opacity(PoolDashboardTheme.chromeFooterOpacity)
-                        .overlay(alignment: .top) {
-                            Rectangle()
-                                .fill(PoolDashboardTheme.panelInnerStroke.opacity(0.75))
-                                .frame(height: 1)
+            .padding(20)
+            Divider()
+            ScrollView {
+                Group {
+                    if selectedWorkspace == .overview {
+                        VStack(alignment: .leading, spacing: 18) {
+                            dashboardHeaderSection
+                            syncToolbarPanel
+                            accountUsagePanel(availableWidth: contentWidth)
                         }
-                )
-                .frame(width: safeViewportWidth, alignment: .leading)
-
-            if workspaceDrawerState.isVisible {
-                workspaceDrawerPanel(
-                    height: workspaceDrawerHeight(for: viewportHeight),
-                    viewportWidth: safeViewportWidth
-                )
+                    } else {
+                        workspaceContent(availableWidth: contentWidth)
+                    }
+                }
+                .frame(width: contentWidth, alignment: .leading)
+                .padding(.horizontal, ResponsiveLayout.contentHorizontalPadding)
+                .padding(.vertical, 20)
             }
+            // A new page starts at its top; form and account state stay on the parent view.
+            .id(selectedWorkspace)
+            .accessibilityIdentifier("dashboard.page.\(selectedWorkspace.rawValue)")
         }
         .frame(width: safeViewportWidth, alignment: .topLeading)
         .frame(maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func dashboardScrollableContent(availableWidth: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: PoolDashboardTheme.sectionSpacing) {
-            dashboardHeaderChrome(availableWidth: availableWidth)
-            accountUsagePanel(availableWidth: availableWidth)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private func dashboardHeaderChrome(availableWidth: CGFloat) -> some View {
-        if Self.usesStackedDashboardChrome(availableWidth: availableWidth) {
-            VStack(alignment: .leading, spacing: 10) {
-                dashboardHeaderSection
-                syncToolbarPanel
-            }
-        } else {
-            HStack(alignment: .top, spacing: 12) {
-                dashboardHeaderSection
-                syncToolbarPanel
-            }
-        }
     }
 
     private var dashboardHeaderSection: some View {
@@ -847,154 +772,32 @@ struct PoolDashboardView: View {
         max(0, viewportWidth - ResponsiveLayout.contentHorizontalPadding * 2)
     }
 
-    private static func usesStackedDashboardChrome(availableWidth: CGFloat) -> Bool {
-        availableWidth < ResponsiveLayout.dashboardChromeStackBreakpoint
-    }
-
     private static func usesStackedWorkspaceContent(availableWidth: CGFloat) -> Bool {
         availableWidth < ResponsiveLayout.workspaceContentStackBreakpoint
     }
 
-    private var collapsedSidebarHandle: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                withAnimation(.easeInOut(duration: PoolDashboardTheme.fastAnimationDuration)) {
-                    isSidebarCollapsed = false
-                }
-            } label: {
-                Image(systemName: "sidebar.left")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(PoolDashboardTheme.textSecondary)
-                    .frame(width: 28, height: 28)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(PoolDashboardTheme.panelMutedFill)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(PoolDashboardTheme.panelInnerStroke, lineWidth: 1)
-                            )
-                    )
-            }
-            .buttonStyle(.plain)
-
-            Spacer(minLength: 0)
-        }
-        .frame(width: 40, alignment: .topLeading)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .padding(.top, 14)
-        .background(PoolDashboardTheme.panelMutedFill.opacity(PoolDashboardTheme.chromeSidebarOpacity))
-    }
-
-    private func workspaceDrawerHeight(for availableHeight: CGFloat) -> CGFloat {
-        switch workspaceDrawerState {
-        case .collapsed:
-            return 0
-        case .partial:
-            return min(440, max(300, availableHeight * 0.38))
-        case .expanded:
-            return max(260, availableHeight - 56)
-        }
-    }
-
-    private func workspaceDrawerPanel(height: CGFloat, viewportWidth: CGFloat) -> some View {
-        let safeViewportWidth = max(0, viewportWidth)
-        let contentWidth = Self.contentWidth(for: safeViewportWidth)
-
-        return VStack(alignment: .leading, spacing: 0) {
-            Rectangle()
-                .fill(PoolDashboardTheme.panelInnerStroke.opacity(0.75))
-                .frame(height: 1)
-
-            ScrollView(showsIndicators: false) {
-                workspaceContent(availableWidth: contentWidth)
-                    .id(selectedWorkspace.id)
-                    .frame(width: contentWidth, alignment: .leading)
-                    .padding(.horizontal, ResponsiveLayout.contentHorizontalPadding)
-                    .padding(.vertical, 12)
-                    .frame(width: safeViewportWidth, alignment: .leading)
-            }
-            .frame(width: safeViewportWidth, height: height, alignment: .topLeading)
-            .background(PoolDashboardTheme.panelStrongFill.opacity(PoolDashboardTheme.chromeStrongOpacity))
-        }
-        .frame(width: safeViewportWidth, alignment: .topLeading)
-    }
-
-    private func workspaceCollapseToggle() -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: workspaceDrawerState.symbolName)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(PoolDashboardTheme.textMuted)
-                .frame(width: 12)
-
-            Text(selectedWorkspace.title)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundStyle(PoolDashboardTheme.textSecondary)
-
-            Rectangle()
-                .fill(PoolDashboardTheme.panelInnerStroke.opacity(0.9))
-                .frame(height: 1)
-
-            Text(L10n.text(workspaceDrawerState.actionTitleKey))
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(PoolDashboardTheme.textMuted)
-        }
-        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
-        .padding(.horizontal, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(PoolDashboardTheme.panelMutedFill.opacity(PoolDashboardTheme.isLightPalette ? 0.72 : 0.45))
-        )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: PoolDashboardTheme.fastAnimationDuration)) {
-                workspaceDrawerState = workspaceDrawerState.next()
-            }
-        }
-    }
-
     private var workspaceSidebar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text(L10n.text("workspace.list_title").uppercased())
-                    .font(PoolDashboardTheme.metadataFont.weight(.semibold))
-                    .tracking(PoolDashboardTheme.metadataTracking)
-                    .foregroundStyle(PoolDashboardTheme.textMuted)
-
-                Spacer(minLength: 0)
-
-                Button {
-                    withAnimation(.easeInOut(duration: PoolDashboardTheme.fastAnimationDuration)) {
-                        isSidebarCollapsed = true
-                    }
-                } label: {
-                    Image(systemName: "sidebar.left")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(PoolDashboardTheme.textMuted)
-                        .frame(width: 20, height: 20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(PoolDashboardTheme.panelMutedFill)
-                        )
+        VStack(alignment: .leading, spacing: 0) {
+            List(selection: Binding<Workspace?>(
+                get: { selectedWorkspace },
+                set: { if let workspace = $0 { selectedWorkspace = workspace } }
+            )) {
+                ForEach(visibleWorkspaces) { workspace in
+                    DashboardSidebarLabel(title: workspace.title, symbolName: workspace.symbolName,
+                        isSelected: selectedWorkspace == workspace, isFocused: sidebarHasFocus)
+                        .padding(.vertical, 5)
+                        .tag(workspace)
+                        .accessibilityIdentifier("dashboard.navigation.\(workspace.rawValue)")
                 }
-                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 8)
-
-            ForEach(visibleWorkspaces) { workspace in
-                workspaceButton(for: workspace)
-            }
-
-            Spacer(minLength: 0)
-
+            .listStyle(.sidebar)
+            .focused($sidebarHasFocus)
             if let appUpdateAvailablePrompt {
                 sidebarUpdateButton(prompt: appUpdateAvailablePrompt)
+                    .padding(12)
             }
         }
-        .frame(width: PoolDashboardTheme.workspaceSidebarWidth, alignment: .topLeading)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .padding(.vertical, PoolDashboardTheme.workspaceSidebarPadding)
-        .padding(.horizontal, 10)
-        .background(PoolDashboardTheme.panelMutedFill.opacity(PoolDashboardTheme.chromeSidebarOpacity))
+        .frame(maxHeight: .infinity)
     }
 
     private var visibleWorkspaces: [Workspace] {
@@ -1013,12 +816,6 @@ struct PoolDashboardView: View {
 
     private func workspaceContent(availableWidth: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: PoolDashboardTheme.sectionSpacing) {
-            PanelSectionHeaderView(
-                title: selectedWorkspace.title,
-                subtitle: selectedWorkspace.subtitle,
-                symbolName: selectedWorkspace.symbolName
-            )
-
             if hasWorkspaceContextPanel {
                 if Self.usesStackedWorkspaceContent(availableWidth: availableWidth) {
                     VStack(alignment: .leading, spacing: PoolDashboardTheme.sectionSpacing) {
@@ -1047,7 +844,7 @@ struct PoolDashboardView: View {
         switch selectedWorkspace {
         case .authentication:
             return selectedAuthMethod == .oauth
-        case .runtime, .schedule, .usageAnalytics, .openAIResetAlert, .settings, .safety:
+        case .overview, .runtime, .schedule, .usageAnalytics, .openAIResetAlert, .settings, .safety:
             return false
         default:
             return true
@@ -1057,6 +854,8 @@ struct PoolDashboardView: View {
     @ViewBuilder
     private var workspaceMainPanel: some View {
         switch selectedWorkspace {
+        case .overview:
+            EmptyView()
         case .authentication:
             authenticationRoutePanel
         case .runtime:
@@ -1079,6 +878,8 @@ struct PoolDashboardView: View {
     @ViewBuilder
     private var workspaceContextPanel: some View {
         switch selectedWorkspace {
+        case .overview:
+            EmptyView()
         case .authentication:
             localOAuthAccountsPanel
         case .runtime:
@@ -1152,93 +953,6 @@ struct PoolDashboardView: View {
             }
         }
         .sectionCardStyle()
-    }
-
-    private func workspaceButton(for workspace: Workspace) -> some View {
-        let isSelected = selectedWorkspace == workspace
-        let isResetAlert = workspace == .openAIResetAlert
-
-        return Button {
-            selectedWorkspace = workspace
-            if workspaceDrawerState == .collapsed {
-                withAnimation(.easeInOut(duration: PoolDashboardTheme.fastAnimationDuration)) {
-                    workspaceDrawerState = .partial
-                }
-            }
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: workspace.symbolName)
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 16)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(workspace.title)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    Text(workspace.subtitle)
-                        .font(.caption2)
-                        .lineLimit(1)
-                        .foregroundStyle(PoolDashboardTheme.textMuted)
-                }
-
-                Spacer(minLength: 0)
-
-                if isResetAlert {
-                    Text(L10n.text("special_reset.badge"))
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color.white.opacity(0.95))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(red: 1.0, green: 0.48, blue: 0.24), Color(red: 0.95, green: 0.22, blue: 0.16)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                        )
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 8)
-            .padding(.horizontal, 10)
-            .background(
-                RoundedRectangle(cornerRadius: PoolDashboardTheme.workspaceSidebarItemCornerRadius, style: .continuous)
-                    .fill(
-                        isResetAlert
-                        ? AnyShapeStyle(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 1.0, green: 0.56, blue: 0.28).opacity(isSelected ? 0.30 : 0.15),
-                                    Color(red: 0.94, green: 0.24, blue: 0.18).opacity(isSelected ? 0.24 : 0.12)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        : AnyShapeStyle(isSelected ? PoolDashboardTheme.panelStrongFill : Color.clear)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: PoolDashboardTheme.workspaceSidebarItemCornerRadius, style: .continuous)
-                            .stroke(
-                                isResetAlert
-                                ? Color(red: 1.0, green: 0.56, blue: 0.28).opacity(isSelected ? 0.95 : 0.55)
-                                : (isSelected ? PoolDashboardTheme.glowA.opacity(0.5) : PoolDashboardTheme.panelInnerStroke),
-                                lineWidth: 1
-                            )
-                    )
-            )
-            .contentShape(
-                RoundedRectangle(cornerRadius: PoolDashboardTheme.workspaceSidebarItemCornerRadius, style: .continuous)
-            )
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(
-            isResetAlert
-            ? (isSelected ? PoolDashboardTheme.textPrimary : Color(red: 1.0, green: 0.72, blue: 0.56))
-            : (isSelected ? PoolDashboardTheme.textPrimary : PoolDashboardTheme.textSecondary)
-        )
     }
 
     private func sidebarUpdateButton(prompt: AppUpdatePrompt) -> some View {
@@ -8787,15 +8501,12 @@ private extension UsageAnalyticsWorkspacePanelView {
 }
 
 extension PoolDashboardView {
-    static func debugWorkspaceDrawerStateSnapshots() -> [(isVisible: Bool, symbolName: String, actionTitleKey: String, nextSymbolName: String)] {
-        [WorkspaceDrawerState.collapsed, .partial, .expanded].map { state in
-            (
-                isVisible: state.isVisible,
-                symbolName: state.symbolName,
-                actionTitleKey: state.actionTitleKey,
-                nextSymbolName: state.next().symbolName
-            )
-        }
+    @MainActor
+    static func debugPageView(store: AccountPoolStoring, page: String) -> some View {
+        var view = PoolDashboardView(store: store)
+        view._selectedWorkspace = State(initialValue: Workspace(rawValue: page) ?? .overview)
+        return view.dashboardContent
+            .background(Color(nsColor: .windowBackgroundColor))
     }
 
     static func debugSpecialResetKinds() -> [(rawValue: String, interval: TimeInterval, title: String)] {
@@ -10228,10 +9939,6 @@ extension PoolDashboardView {
         ).id
     }
 
-    static func debugUsesStackedDashboardChrome(availableWidth: CGFloat) -> Bool {
-        usesStackedDashboardChrome(availableWidth: availableWidth)
-    }
-
     static func debugUsesStackedWorkspaceContent(availableWidth: CGFloat) -> Bool {
         usesStackedWorkspaceContent(availableWidth: availableWidth)
     }
@@ -10561,7 +10268,6 @@ extension PoolDashboardView {
         )
 
         return HStack(alignment: .top, spacing: 12) {
-            view.collapsedSidebarHandle
             VStack(alignment: .leading, spacing: 12) {
                 view.sidebarUpdateButton(prompt: prompt)
                 view.strategySettingsPanel
@@ -10574,8 +10280,7 @@ extension PoolDashboardView {
     static func debugPrivateDashboardPanelViews(store: AccountPoolStoring) -> some View {
         let view = PoolDashboardView(store: store)
         return VStack(alignment: .leading, spacing: 12) {
-            view.dashboardHeaderChrome(availableWidth: 820)
-            view.dashboardHeaderChrome(availableWidth: 1_200)
+            view.dashboardHeaderSection
             view.syncToolbarPanel
             view.activeAccountPanel
             view.accountUsagePanel(availableWidth: 1_200)

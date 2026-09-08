@@ -86,6 +86,17 @@ struct ReadmeMenuBarScreenshotGenerationTests {
                 )
                 try data.write(to: outputDirectory.appendingPathComponent(dark ? locale.fileName : "light-" + locale.fileName))
                 if locale.languageCode == "zh-Hans" {
+                    let previousPalette = PoolDashboardTheme.isLightPalette
+                    PoolDashboardTheme.forcePalette(isLight: !dark)
+                    defer { PoolDashboardTheme.forcePalette(isLight: previousPalette) }
+                    for page in ["overview", "authentication", "settings", "usageAnalytics"] {
+                        let dashboard = PoolDashboardView.debugPageView(
+                            store: ReadmeScreenshotStore(snapshot: Self.mockState.snapshot), page: page
+                        ).preferredColorScheme(dark ? .dark : .light)
+                        let pagePNG = try Self.renderPNG(dashboard,
+                            size: CGSize(width: 1100, height: 800), dark: dark)
+                        try pagePNG.write(to: outputDirectory.appendingPathComponent("dashboard-\(page)-\(dark ? "dark" : "light").png"))
+                    }
                     var referenceRow = model.menuBarSnapshot.accountRows[0]
                     referenceRow.subscription = nil
                     referenceRow.usageWindows = referenceRow.usageWindows.filter { $0.id == "weekly" }
@@ -207,6 +218,9 @@ struct ReadmeMenuBarScreenshotGenerationTests {
         size: CGSize,
         dark: Bool
     ) throws -> Data {
+        let previousAppearance = NSApp.appearance
+        NSApp.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        defer { NSApp.appearance = previousAppearance }
         let hostingView = NSHostingView(rootView: rootView)
         hostingView.frame = CGRect(origin: .zero, size: size)
         hostingView.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)

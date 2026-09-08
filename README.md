@@ -244,7 +244,14 @@ If browser callback cannot complete directly in-app:
 
 ## Workspaces
 
-The UI is organized into workspaces for clearer operational boundaries.
+The window opens on Accounts. Selecting a sidebar item replaces the main content with that full page and starts it at the top. Authentication form values stay in the dashboard state while moving between pages. The sidebar can be collapsed to give the page more room.
+
+### Accounts
+
+- Account counts, usage summary and sync status
+- Account usage cards, subscription records and switching actions
+- Sorting priorities in the Sort menu, with layout and group controls beside the account list
+- Add account opens Authentication
 
 ### Authentication
 

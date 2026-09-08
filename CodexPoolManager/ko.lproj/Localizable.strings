@@ -675,3 +675,8 @@
 "codexbar.projected_empty_now" = "지금 소진 예상";
 "codexbar.reset_credits" = "한도 재설정 크레딧";
 "codexbar.now" = "now";
+
+"workspace.overview.title" = "계정";
+"workspace.overview.subtitle" = "사용량, 구독 기록 및 계정 전환";
+"workspace.sidebar.toggle" = "사이드바 전환";
+"workspace.add_account" = "계정 추가";

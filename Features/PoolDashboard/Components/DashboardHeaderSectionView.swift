@@ -43,14 +43,14 @@ struct DashboardHeaderSectionView: View {
 
     private func dashboardTile(_ tile: DashboardHeaderTile) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(tile.title.uppercased())
+            Text(tile.title)
                 .font(PoolDashboardTheme.metadataFont.weight(.semibold))
-                .tracking(0.8)
+                .tracking(0)
                 .foregroundStyle(PoolDashboardTheme.textMuted)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
             Text(tile.value)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.system(size: 22, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(PoolDashboardTheme.textPrimary)
                 .lineLimit(1)
@@ -59,14 +59,14 @@ struct DashboardHeaderSectionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, PoolDashboardTheme.headerTileVerticalPadding)
         .padding(.horizontal, PoolDashboardTheme.headerTileHorizontalPadding)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(PoolDashboardTheme.panelMutedFill.opacity(0.78))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(tile.tone.opacity(0.45), lineWidth: 0.9)
-                )
-        )
+        .background {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.background)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(.primary.opacity(0.07))
+                }
+        }
     }
 }
 

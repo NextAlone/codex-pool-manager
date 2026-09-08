@@ -675,3 +675,8 @@
 "codexbar.projected_empty_now" = "Projeté vide maintenant";
 "codexbar.reset_credits" = "Crédits de réinitialisation de limite";
 "codexbar.now" = "now";
+
+"workspace.overview.title" = "Comptes";
+"workspace.overview.subtitle" = "Utilisation, abonnements et changement de compte";
+"workspace.sidebar.toggle" = "Afficher la barre latérale";
+"workspace.add_account" = "Ajouter un compte";

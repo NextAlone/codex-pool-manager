@@ -675,3 +675,8 @@
 "codexbar.projected_empty_now" = "まもなく枯渇する見込み";
 "codexbar.reset_credits" = "上限リセットクレジット";
 "codexbar.now" = "now";
+
+"workspace.overview.title" = "アカウント";
+"workspace.overview.subtitle" = "使用量と契約記録、アカウントの切り替え";
+"workspace.sidebar.toggle" = "サイドバーを切り替え";
+"workspace.add_account" = "アカウントを追加";

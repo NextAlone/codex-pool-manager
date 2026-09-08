@@ -309,66 +309,8 @@ struct AccountUsagePanelView: View {
             .foregroundStyle(PoolDashboardTheme.textPrimary.opacity(PoolDashboardTheme.groupLabelOpacity))
     }
 
-    @ViewBuilder
     private var sortingLayoutControls: some View {
-        if usesStackedHeaderControls {
-            VStack(alignment: .leading, spacing: 8) {
-                sortPriorityToggles
-                sortAndLayoutControls
-            }
-        } else {
-            HStack(spacing: 10) {
-                sortPriorityToggles
-                sortAndLayoutControls
-            }
-        }
-    }
-
-    private var sortPriorityToggles: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 10) {
-                activeAccountFirstToggle
-                paidAccountFirstToggle
-                apiKeyAccountLastToggle
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 10) {
-                    activeAccountFirstToggle
-                    paidAccountFirstToggle
-                }
-                apiKeyAccountLastToggle
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                activeAccountFirstToggle
-                paidAccountFirstToggle
-                apiKeyAccountLastToggle
-            }
-        }
-    }
-
-    private var activeAccountFirstToggle: some View {
-        sortPriorityToggle(isOn: $persistedActiveAccountFirst, titleKey: "sort.active_first")
-    }
-
-    private var paidAccountFirstToggle: some View {
-        sortPriorityToggle(isOn: $persistedPaidAccountFirst, titleKey: "sort.paid_first")
-    }
-
-    private var apiKeyAccountLastToggle: some View {
-        sortPriorityToggle(isOn: $persistedAPIKeyAccountLast, titleKey: "sort.api_key_last")
-    }
-
-    private func sortPriorityToggle(isOn: Binding<Bool>, titleKey: String) -> some View {
-        Toggle(isOn: isOn) {
-            Text(L10n.text(titleKey))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(PoolDashboardTheme.textSecondary)
-                .lineLimit(1)
-        }
-        .toggleStyle(.checkbox)
-        .fixedSize(horizontal: true, vertical: false)
+        sortAndLayoutControls
     }
 
     @ViewBuilder
@@ -404,6 +346,10 @@ struct AccountUsagePanelView: View {
 
     private var sortMenuControl: some View {
         Menu {
+            Toggle(L10n.text("sort.active_first"), isOn: $persistedActiveAccountFirst)
+            Toggle(L10n.text("sort.paid_first"), isOn: $persistedPaidAccountFirst)
+            Toggle(L10n.text("sort.api_key_last"), isOn: $persistedAPIKeyAccountLast)
+            Divider()
             ForEach(SortMode.allCases) { mode in
                 Button {
                     persistedSortModeRawValue = mode.rawValue

@@ -82,6 +82,18 @@ private func renderInHostingView<V: View>(
 }
 
 struct ViewSmokeCoverageTests {
+    @Test @MainActor
+    func fullDashboardPagesRenderWithoutMutatingAccounts() {
+        let state = AccountPoolState(accounts: [makeSmokeAccount()], mode: .manual)
+        let store = ViewSmokeStore(snapshot: state.snapshot)
+        for page in ["overview", "authentication", "runtime", "schedule", "usageAnalytics", "openAIResetAlert", "settings", "safety"] {
+            renderInHostingView(PoolDashboardView.debugPageView(store: store, page: page),
+                size: CGSize(width: 860, height: 680))
+        }
+        #expect(store.saved.isEmpty)
+        #expect(store.snapshot == state.snapshot)
+    }
+
     @Test
     @MainActor
     func activeAccountPanelViewBodyRendersBranches() {
@@ -2065,8 +2077,6 @@ struct ViewSmokeCoverageTests {
 
     @Test
     func poolDashboardResponsiveLayoutBreakpointsPreferStackingBeforeClipping() {
-        #expect(PoolDashboardView.debugUsesStackedDashboardChrome(availableWidth: 940))
-        #expect(!PoolDashboardView.debugUsesStackedDashboardChrome(availableWidth: 1120))
         #expect(PoolDashboardView.debugUsesStackedWorkspaceContent(availableWidth: 940))
         #expect(!PoolDashboardView.debugUsesStackedWorkspaceContent(availableWidth: 1120))
         #expect(AccountUsagePanelView.debugUsesStackedHeaderControls(availableWidth: 940))

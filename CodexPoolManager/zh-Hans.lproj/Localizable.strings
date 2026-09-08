@@ -676,3 +676,8 @@
 "codexbar.projected_empty_now" = "即将耗尽";
 "codexbar.reset_credits" = "限额重置额度";
 "codexbar.now" = "现在";
+
+"workspace.overview.title" = "账号总览";
+"workspace.overview.subtitle" = "查看额度与订阅记录，管理当前账号";
+"workspace.sidebar.toggle" = "切换侧边栏";
+"workspace.add_account" = "添加账号";

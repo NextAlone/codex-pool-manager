@@ -1281,26 +1281,6 @@ struct OAuthSupportCoverageBoostTests {
 
 struct PoolDashboardDebugCoverageHookTests {
     @Test
-    func workspaceDrawerHooksCoverCycleAndMetadata() {
-        let snapshots = PoolDashboardView.debugWorkspaceDrawerStateSnapshots()
-        #expect(snapshots.count == 3)
-        #expect(snapshots[0].isVisible == false)
-        #expect(snapshots[0].symbolName == "chevron.right")
-        #expect(snapshots[0].actionTitleKey == "drawer.expand")
-        #expect(snapshots[0].nextSymbolName == "chevron.up")
-
-        #expect(snapshots[1].isVisible)
-        #expect(snapshots[1].symbolName == "chevron.up")
-        #expect(snapshots[1].actionTitleKey == "drawer.expand_full")
-        #expect(snapshots[1].nextSymbolName == "chevron.down")
-
-        #expect(snapshots[2].isVisible)
-        #expect(snapshots[2].symbolName == "chevron.down")
-        #expect(snapshots[2].actionTitleKey == "drawer.collapse")
-        #expect(snapshots[2].nextSymbolName == "chevron.right")
-    }
-
-    @Test
     func specialResetHooksExposeExpectedIdentifiersAndTitles() {
         let kinds = PoolDashboardView.debugSpecialResetKinds()
         #expect(kinds.count == 2)

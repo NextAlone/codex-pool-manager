@@ -684,3 +684,8 @@
 "codexbar.projected_empty_now" = "Projected empty now";
 "codexbar.reset_credits" = "Limit Reset Credits";
 "codexbar.now" = "now";
+
+"workspace.overview.title" = "Accounts";
+"workspace.overview.subtitle" = "Usage, subscription records and account switching";
+"workspace.sidebar.toggle" = "Toggle sidebar";
+"workspace.add_account" = "Add account";

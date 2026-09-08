@@ -31,7 +31,8 @@ struct CodexPoolManagerApp: App {
                 .id(appLanguageOverride)
                 .environment(\.locale, L10n.locale(for: appLanguageOverride))
         }
-        .windowStyle(.hiddenTitleBar)
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
         .windowResizability(.contentSize)
         .commands {
             SidebarCommands()
