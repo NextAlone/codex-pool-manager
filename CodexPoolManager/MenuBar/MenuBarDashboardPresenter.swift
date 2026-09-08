@@ -68,6 +68,16 @@ struct MenuBarAccountRow: Identifiable, Equatable {
     let resetText: String
     let fiveHourResetText: String?
     let warningText: String?
+    var usageWindows: [MenuBarUsageWindow] = []
+    var resetCreditCount: Int? = nil
+    var resetCreditCountdown: String? = nil
+}
+
+struct MenuBarUsageWindow: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let remainingPercent: Int
+    let resetText: String
 }
 
 struct MenuBarWarningRow: Identifiable, Equatable {
@@ -98,7 +108,7 @@ enum MenuBarDashboardPresenter {
             settings: accountOrderSettings
         )
         let accountRows = orderedAccounts.map { account in
-            makeAccountRow(account, activeAccountID: state.activeAccountID)
+            makeAccountRow(account, activeAccountID: state.activeAccountID, now: now)
         }
         let activeAccount = state.activeAccount.flatMap { active in
             accountRows.first(where: { $0.id == active.id })
@@ -158,7 +168,8 @@ enum MenuBarDashboardPresenter {
 
     private static func makeAccountRow(
         _ account: AgentAccount,
-        activeAccountID: UUID?
+        activeAccountID: UUID?,
+        now: Date
     ) -> MenuBarAccountRow {
         let resetCredit = ResetCreditPresentationFormatter.presentation(for: account)
 
@@ -180,8 +191,39 @@ enum MenuBarDashboardPresenter {
                 : nil,
             resetText: resetText(for: account.usageWindowResetAt),
             fiveHourResetText: account.isPaid ? resetText(for: account.primaryUsageResetAt) : nil,
-            warningText: account.usageSyncError
+            warningText: account.usageSyncError,
+            usageWindows: usageWindows(for: account, now: now),
+            resetCreditCount: account.rateLimitResetCreditsAvailableCount,
+            resetCreditCountdown: account.rateLimitResetCreditEstimatedExpiries.isEmpty ? nil :
+                (account.rateLimitResetCreditExpirySource == .api ? "" : "≈ ") +
+                account.rateLimitResetCreditEstimatedExpiries.map { countdown(to: $0, now: now) }.joined(separator: " · ")
         )
+    }
+
+    static func usageWindows(for account: AgentAccount, now: Date) -> [MenuBarUsageWindow] {
+        guard !account.isRelayAPIKeyAccount else { return [] }
+        var windows: [MenuBarUsageWindow] = []
+        if let usage = account.primaryUsagePercent {
+            windows.append(MenuBarUsageWindow(id: "5h", title: L10n.text("usage.five_hour_short"),
+                remainingPercent: min(100, max(0, 100 - usage)),
+                resetText: countdown(to: account.primaryUsageResetAt, now: now)))
+        }
+        if account.secondaryUsagePercent != nil || account.usageWindowName == "weekly" {
+            let remaining = account.secondaryUsagePercent.map { min(100, max(0, 100 - $0)) }
+                ?? Int((account.remainingRatio * 100).rounded())
+            windows.append(MenuBarUsageWindow(id: "weekly", title: L10n.text("usage.weekly_short"),
+                remainingPercent: remaining,
+                resetText: countdown(to: account.secondaryUsageResetAt ?? account.usageWindowResetAt, now: now)))
+        }
+        return windows
+    }
+
+    static func countdown(to date: Date?, now: Date) -> String {
+        guard let date else { return "—" }
+        let minutes = max(0, Int(ceil(date.timeIntervalSince(now) / 60)))
+        if minutes >= 1440 { return "\(minutes / 1440)d \((minutes % 1440) / 60)h" }
+        if minutes >= 60 { return "\(minutes / 60)h \(minutes % 60)m" }
+        return "\(minutes)m"
     }
 
     private static func orderedAccounts(

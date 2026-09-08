@@ -749,3 +749,26 @@ struct MenuBarDashboardPresenterTests {
         return "登入資訊已過期，請重新登入或重新匯入此帳號。"
     }
 }
+
+struct CompactMenuBarUsageTests {
+    @Test func countdownHandlesMissingExpiredAndFutureDates() {
+        let now = Date(timeIntervalSince1970: 100000)
+        #expect(MenuBarDashboardPresenter.countdown(to: nil, now: now) == "—")
+        #expect(MenuBarDashboardPresenter.countdown(to: now.addingTimeInterval(-60), now: now) == "0m")
+        #expect(MenuBarDashboardPresenter.countdown(to: now.addingTimeInterval(90060), now: now) == "1d 1h")
+    }
+
+    @Test func onlyKnownUsageWindowsArePublished() {
+        let now = Date()
+        var account = AgentAccount(id: UUID(), name: "test", usedUnits: 20, quota: 100)
+        #expect(MenuBarDashboardPresenter.usageWindows(for: account, now: now).isEmpty)
+        account.primaryUsagePercent = 42
+        var windows = MenuBarDashboardPresenter.usageWindows(for: account, now: now)
+        #expect(windows.map(\.id) == ["5h"])
+        #expect(windows.first?.remainingPercent == 58)
+        account.secondaryUsagePercent = 18
+        windows = MenuBarDashboardPresenter.usageWindows(for: account, now: now)
+        #expect(windows.map(\.id) == ["5h", "weekly"])
+        #expect(windows.last?.remainingPercent == 82)
+    }
+}

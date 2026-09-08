@@ -386,6 +386,33 @@ struct AppPoolRuntimeModelTests {
     }
 
     @Test
+    func overlappingSwitchIsIgnoredAndFailureClearsBusyState() async {
+        let initialState = makeTwoAccountState()
+        let target = initialState.accounts[1].id
+        var completion: CheckedContinuation<AppPoolRuntimeModel.SwitchResult, Never>?
+        let (started, signal) = AsyncStream<Void>.makeStream()
+        var calls = 0
+        let model = AppPoolRuntimeModel(store: SpyStore(), initialState: initialState,
+            officialSwitchRunner: { _ in
+                calls += 1
+                return await withCheckedContinuation {
+                    completion = $0
+                    signal.yield(())
+                }
+            })
+        let pending = Task { await model.switchAccount(target) }
+        _ = await nextValue(from: started)
+        #expect(model.switchingAccountID == target)
+        await model.switchAccount(target)
+        #expect(calls == 1)
+        completion?.resume(returning: .failure("switch failed"))
+        await pending.value
+        #expect(model.switchingAccountID == nil)
+        #expect(model.lastSwitchMessage == "switch failed")
+        #expect(model.state.activeAccountID == initialState.activeAccountID)
+    }
+
+    @Test
     func switchAccountMarksOfficialAccountActiveAfterSuccessfulSwitch() async {
         let store = SpyStore()
         let account = AgentAccount(

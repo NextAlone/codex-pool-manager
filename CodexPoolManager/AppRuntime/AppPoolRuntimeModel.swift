@@ -54,6 +54,7 @@ final class AppPoolRuntimeModel: ObservableObject {
     @Published private(set) var isSyncingUsage = false
     @Published private(set) var lastSyncError: String?
     @Published private(set) var lastSyncOutcome: SyncOutcome?
+    @Published private(set) var switchingAccountID: UUID?
     @Published private(set) var lastSwitchMessage: String?
     @Published private(set) var menuBarNow: Date
 
@@ -183,7 +184,11 @@ final class AppPoolRuntimeModel: ObservableObject {
     }
 
     func switchAccount(_ accountID: UUID) async {
-        guard let account = state.accounts.first(where: { $0.id == accountID }) else { return }
+        guard switchingAccountID == nil,
+              let account = state.accounts.first(where: { $0.id == accountID }) else { return }
+        switchingAccountID = accountID
+        lastSwitchMessage = nil
+        defer { switchingAccountID = nil }
 
         let result: SwitchResult
         if account.isRelayAPIKeyAccount {

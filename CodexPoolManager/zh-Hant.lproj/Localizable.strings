@@ -650,3 +650,5 @@
 "settings.preserve_routing" = "切換 ChatGPT 帳號時保留路由設定";
 "settings.preserve_routing_hint" = "保留 Codex Router 與現有路由設定。適用於手動、自動 OAuth 切換，不適用於 API Key / Relay 啟用。切換前退出 Codex，之後重新開啟以載入新帳號。";
 "switch.service.log.routing_preserved" = "已保留現有路由設定。";
+
+"menu_bar.reset_credit.count_format" = "%d 次可用";

@@ -649,3 +649,5 @@
 "settings.preserve_routing" = "ChatGPT アカウント切替時にルーティング設定を保持";
 "settings.preserve_routing_hint" = "Codex Router と既存のルーティング設定を保持します。手動・自動の OAuth 切替に適用され、API Key / Relay の有効化には適用されません。切替前に Codex を終了し、切替後に再起動してください。";
 "switch.service.log.routing_preserved" = "既存のルーティング設定を保持しました。";
+
+"menu_bar.reset_credit.count_format" = "%d 回利用可能";

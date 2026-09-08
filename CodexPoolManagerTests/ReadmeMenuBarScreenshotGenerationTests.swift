@@ -68,19 +68,22 @@ struct ReadmeMenuBarScreenshotGenerationTests {
             )
             model.bootstrapIfNeeded()
 
-            let view = MenuBarDashboardView(
-                runtimeModel: model,
-                openDashboard: {},
-                switchAccount: { _ in }
-            )
-            .environment(\.locale, L10n.locale(for: locale.languageCode))
-            .preferredColorScheme(.dark)
+            for dark in [false, true] {
+                let view = MenuBarDashboardView(
+                    runtimeModel: model,
+                    openDashboard: {},
+                    switchAccount: { _ in }
+                )
+                .environment(\.locale, L10n.locale(for: locale.languageCode))
+                .preferredColorScheme(dark ? .dark : .light)
 
-            let data = try Self.renderPNG(
-                view,
-                size: CGSize(width: 460, height: 500)
-            )
-            try data.write(to: outputDirectory.appendingPathComponent(locale.fileName))
+                let data = try Self.renderPNG(
+                    view,
+                    size: CGSize(width: 340, height: 620),
+                    dark: dark
+                )
+                try data.write(to: outputDirectory.appendingPathComponent(dark ? locale.fileName : "light-" + locale.fileName))
+            }
         }
     }
 
@@ -175,11 +178,12 @@ struct ReadmeMenuBarScreenshotGenerationTests {
 
     private static func renderPNG<V: View>(
         _ rootView: V,
-        size: CGSize
+        size: CGSize,
+        dark: Bool
     ) throws -> Data {
         let hostingView = NSHostingView(rootView: rootView)
         hostingView.frame = CGRect(origin: .zero, size: size)
-        hostingView.appearance = NSAppearance(named: .darkAqua)
+        hostingView.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 
         let window = NSWindow(
             contentRect: CGRect(origin: .zero, size: size),
@@ -188,7 +192,7 @@ struct ReadmeMenuBarScreenshotGenerationTests {
             defer: false
         )
         window.contentView = hostingView
-        window.appearance = NSAppearance(named: .darkAqua)
+        window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         window.backgroundColor = .windowBackgroundColor
         window.orderBack(nil)
         defer { window.orderOut(nil) }

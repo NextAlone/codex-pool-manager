@@ -649,3 +649,5 @@
 "settings.preserve_routing" = "Conserver le routage lors du changement de compte ChatGPT";
 "settings.preserve_routing_hint" = "Conserve Codex Router et le routage existant. S’applique aux changements OAuth manuels et automatiques, pas à l’activation API Key / Relay. Quittez Codex avant de changer de compte, puis rouvrez-le.";
 "switch.service.log.routing_preserved" = "La configuration de routage existante a été conservée.";
+
+"menu_bar.reset_credit.count_format" = "%d disponibles";
