@@ -2,13 +2,13 @@ import Foundation
 import Testing
 @testable import CodexPoolManager
 
-private let appUpdateLanguageOverrideMutationLock = NSLock()
+private let appUpdateLanguageOverrideMutationLock = testLanguageOverrideMutationLock
 
 private func withAppUpdateLanguageOverride(_ languageCode: String, _ body: () throws -> Void) rethrows {
     appUpdateLanguageOverrideMutationLock.lock()
     defer { appUpdateLanguageOverrideMutationLock.unlock() }
 
-    let defaults = UserDefaults.standard
+    let defaults = AppRuntimeStorage.defaults
     let key = L10n.languageOverrideKey
     let previous = defaults.object(forKey: key)
     defer {

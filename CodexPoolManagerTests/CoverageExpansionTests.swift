@@ -357,7 +357,7 @@ private func preserveLanguageOverride(_ body: () throws -> Void) rethrows {
     languageOverrideMutationLock.lock()
     defer { languageOverrideMutationLock.unlock() }
 
-    let defaults = UserDefaults.standard
+    let defaults = AppRuntimeStorage.defaults
     let key = L10n.languageOverrideKey
     let previous = defaults.object(forKey: key)
     defer {
@@ -370,7 +370,7 @@ private func preserveLanguageOverride(_ body: () throws -> Void) rethrows {
     try body()
 }
 
-private let languageOverrideMutationLock = NSLock()
+private let languageOverrideMutationLock = testLanguageOverrideMutationLock
 
 private func parsedFormBody(_ form: String) -> [String: String] {
     var values: [String: String] = [:]
@@ -1122,11 +1122,22 @@ struct L10nCoverageExpansionTests {
     }
 
     @Test
+    func testLanguageOverrideDoesNotChangeUserPreferences() throws {
+        preserveLanguageOverride {
+            let realValue = UserDefaults.standard.object(forKey: L10n.languageOverrideKey) as? String
+            #expect(AppRuntimeStorage.defaults !== UserDefaults.standard)
+            AppRuntimeStorage.defaults.set("ko", forKey: L10n.languageOverrideKey)
+            #expect(L10n.locale().identifier.hasPrefix("ko"))
+            #expect(UserDefaults.standard.object(forKey: L10n.languageOverrideKey) as? String == realValue)
+        }
+    }
+
+    @Test
     func localeUsesSavedOverrideWhenOverrideParameterIsNil() throws {
         preserveLanguageOverride {
             var matched = false
             for _ in 0..<12 {
-                UserDefaults.standard.set("ko", forKey: L10n.languageOverrideKey)
+                AppRuntimeStorage.defaults.set("ko", forKey: L10n.languageOverrideKey)
                 let locale = L10n.locale()
                 if locale.identifier.lowercased().hasPrefix("ko") {
                     matched = true

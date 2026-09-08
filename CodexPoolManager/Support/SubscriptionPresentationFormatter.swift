@@ -3,6 +3,7 @@ import Foundation
 struct SubscriptionPresentation: Equatable {
     let text: String
     let detail: String
+    let compactDateText: String
     let needsUpdate: Bool
 }
 
@@ -25,6 +26,9 @@ enum SubscriptionPresentationFormatter {
             detail += "\n" + L10n.text("account.subscription.checked_at", formatter.string(from: checkedAt))
         }
         if needsUpdate { detail += "\n" + L10n.text("account.subscription.stale_help") }
-        return SubscriptionPresentation(text: text, detail: detail, needsUpdate: needsUpdate)
+        formatter.timeStyle = .none
+        formatter.setLocalizedDateFormatFromTemplate("yyyyMd")
+        return SubscriptionPresentation(text: text, detail: detail,
+            compactDateText: formatter.string(from: record.activeUntil), needsUpdate: needsUpdate)
     }
 }

@@ -657,3 +657,21 @@
 "account.subscription.record_help" = "ログイン情報に記録された購読期限です。リアルタイムの請求状態や確定した更新・解約日ではありません。";
 "account.subscription.checked_at" = "記録の確認日時：%@";
 "account.subscription.stale_help" = "記録の日付を過ぎています。再ログインして更新してください。購読は自動更新されている可能性があります。";
+
+/* CodexBar menu wording; MIT attribution in ThirdPartyNotices/CodexBar.txt. */
+"codexbar.session" = "セッション";
+"codexbar.weekly" = "週間";
+"codexbar.left" = "残り";
+"codexbar.resets_in" = "%@ 後にリセット";
+"codexbar.resets_now" = "まもなくリセット";
+"codexbar.on_pace" = "想定ペース";
+"codexbar.deficit" = "%d%% 不足";
+"codexbar.reserve" = "%d%% 余裕";
+"codexbar.lasts" = "リセットまで持続";
+"codexbar.headroom" = "1.5倍の余裕";
+"codexbar.runs_out" = "%@ 後に使い切る見込み";
+"codexbar.runs_out_now" = "まもなく使い切ります";
+"codexbar.projected_empty" = "%@ 後に枯渇する見込み";
+"codexbar.projected_empty_now" = "まもなく枯渇する見込み";
+"codexbar.reset_credits" = "上限リセットクレジット";
+"codexbar.now" = "now";

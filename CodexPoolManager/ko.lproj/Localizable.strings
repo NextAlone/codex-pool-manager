@@ -657,3 +657,21 @@
 "account.subscription.record_help" = "로그인 정보에 기록된 구독 기한입니다. 실시간 결제 상태나 확정된 갱신 또는 취소 날짜가 아닙니다.";
 "account.subscription.checked_at" = "기록 확인 시간: %@";
 "account.subscription.stale_help" = "기록된 날짜가 지났습니다. 다시 로그인하여 업데이트하세요. 구독이 자동 갱신되었을 수 있습니다.";
+
+/* CodexBar menu wording; MIT attribution in ThirdPartyNotices/CodexBar.txt. */
+"codexbar.session" = "세션";
+"codexbar.weekly" = "주간";
+"codexbar.left" = "남음";
+"codexbar.resets_in" = "%@ 후 재설정";
+"codexbar.resets_now" = "지금 재설정";
+"codexbar.on_pace" = "정상 속도";
+"codexbar.deficit" = "%d%% 부족";
+"codexbar.reserve" = "%d%% 여유";
+"codexbar.lasts" = "재설정까지 유지";
+"codexbar.headroom" = "1.5배 여유";
+"codexbar.runs_out" = "%@ 후 소진";
+"codexbar.runs_out_now" = "지금 소진";
+"codexbar.projected_empty" = "%@ 후 소진 예상";
+"codexbar.projected_empty_now" = "지금 소진 예상";
+"codexbar.reset_credits" = "한도 재설정 크레딧";
+"codexbar.now" = "now";

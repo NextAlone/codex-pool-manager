@@ -658,3 +658,21 @@
 "account.subscription.record_help" = "来自登录信息的订阅有效期记录，并非实时账单状态，也不代表确定的续费或取消日期。";
 "account.subscription.checked_at" = "记录检查时间：%@";
 "account.subscription.stale_help" = "记录中的日期已过。可重新登录更新；订阅可能已自动续费。";
+
+/* CodexBar menu wording; MIT attribution in ThirdPartyNotices/CodexBar.txt. */
+"codexbar.session" = "会话";
+"codexbar.weekly" = "每周";
+"codexbar.left" = "剩余";
+"codexbar.resets_in" = "%@后重置";
+"codexbar.resets_now" = "立即重置";
+"codexbar.on_pace" = "节奏正常";
+"codexbar.deficit" = "超额 %d%%";
+"codexbar.reserve" = "余量 %d%%";
+"codexbar.lasts" = "持续到重置";
+"codexbar.headroom" = "1.5 倍余量";
+"codexbar.runs_out" = "预计 %@ 后耗尽";
+"codexbar.runs_out_now" = "即将耗尽";
+"codexbar.projected_empty" = "预计 %@ 后耗尽";
+"codexbar.projected_empty_now" = "即将耗尽";
+"codexbar.reset_credits" = "限额重置额度";
+"codexbar.now" = "现在";

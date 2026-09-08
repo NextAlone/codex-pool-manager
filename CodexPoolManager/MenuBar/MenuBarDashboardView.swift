@@ -18,11 +18,11 @@ struct MenuBarDashboardView: View {
                             .foregroundStyle(.secondary)
                             .padding(24)
                     }
-                    ForEach(snapshot.accountRows) { row in
-                        AccountRowView(row: row, updatedText: snapshot.updatedText,
+                    ForEach(Array(snapshot.accountRows.enumerated()), id: \.element.id) { index, row in
+                        AccountRowView(row: row, number: index + 1, updatedText: snapshot.updatedText,
                             isSwitching: runtimeModel.switchingAccountID != nil,
                             switchAccount: switchAccount)
-                        Divider()
+                        Divider().padding(.horizontal, CodexBarMenuStyle.horizontalPadding)
                     }
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
@@ -52,9 +52,9 @@ struct MenuBarDashboardView: View {
             .font(.caption)
             .padding(12)
         }
-        .frame(width: 340)
+        .frame(width: CodexBarMenuStyle.width)
         .frame(height: min(620, max(160, contentHeight + 48 + (runtimeModel.lastSwitchMessage == nil ? 0 : 60))))
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(CodexBarMenuMaterial())
         .task { runtimeModel.bootstrapIfNeeded() }
     }
 
@@ -73,112 +73,197 @@ struct MenuBarDashboardView: View {
     }
 }
 
+// Header, metric, reset-credit layout and typography adapted from CodexBar's MenuCardView.
+// Copyright (c) 2026 Peter Steinberger. MIT; see ThirdPartyNotices/CodexBar.txt.
 private struct AccountRowView: View {
     @State private var isAccountWarningPopoverPresented = false
     @State private var isResetCreditNotePopoverPresented = false
+    @State private var isSubscriptionPopoverPresented = false
     let row: MenuBarAccountRow
+    var number: Int = 1
     var updatedText: String = ""
     var isSwitching = false
     let switchAccount: (UUID) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(spacing: 5) {
-                HStack(spacing: 6) {
-                    Text(row.credentialLabel ?? "Codex").font(.headline)
-                    if row.isActive {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.teal)
-                            .accessibilityLabel(L10n.text("menu_bar.section.active"))
-                    }
-                    Spacer(minLength: 6)
-                    Menu {
-                        Text(row.name)
-                        Button(L10n.text("menu_bar.action.switch")) { switchAccount(row.id) }
-                            .disabled(row.isActive || isSwitching)
-                    } label: {
-                        Text(row.name).lineLimit(1).truncationMode(.middle)
-                    }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: 210, alignment: .trailing)
-                    .help(row.name)
-                }
-                HStack {
-                    Text(updatedText)
-                    Spacer()
-                    Text(row.planBadgeText ?? "")
-                }
-                .font(.caption).foregroundStyle(.secondary)
-                if let subscription = row.subscription {
-                    Text(subscription.text)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .help(subscription.detail)
-                        .accessibilityLabel(subscription.text + ". " + subscription.detail)
-                }
-            }
-            Divider()
-            ForEach(row.usageWindows) { window in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(window.title).fontWeight(.semibold)
-                        Text(L10n.text("usage.remaining_percent_format", window.remainingPercent))
-                        Spacer(minLength: 2)
-                        Text(L10n.text("account.weekly_resets_format", window.resetText))
-                            .foregroundStyle(.secondary).font(.caption2)
-                    }
-                    GeometryReader { geometry in
-                        Capsule().fill(Color.secondary.opacity(0.15))
-                            .overlay(alignment: .leading) {
-                                Capsule().fill(Color.teal)
-                                    .frame(width: geometry.size.width * CGFloat(window.remainingPercent) / 100)
-                            }
-                    }
-                    .frame(height: 5)
-                    .accessibilityLabel("\(window.title) \(window.remainingPercent)%")
-                }
-                .padding(.bottom, 3)
-            }
-            if row.usageWindows.isEmpty {
-                Text("—").foregroundStyle(.secondary)
-            }
-            if let count = row.resetCreditCount {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: CodexBarMenuStyle.headerContentSpacing) {
+                header
                 Divider()
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(L10n.text("menu_bar.reset_credit.detail.title")).fontWeight(.semibold)
-                    HStack(spacing: 5) {
-                        Text(L10n.text("menu_bar.reset_credit.count_format", count))
-                        Spacer(minLength: 2)
-                        Image(systemName: "clock")
-                        Text(row.resetCreditCountdown ?? "—").lineLimit(1).truncationMode(.tail)
-                    }
-                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, CodexBarMenuStyle.horizontalPadding)
+            .padding(.vertical, CodexBarMenuStyle.headerVerticalPadding)
+
+            VStack(alignment: .leading, spacing: CodexBarMenuStyle.sectionSpacing) {
+                ForEach(row.usageWindows) { window in
+                    CodexBarMetricRow(window: window)
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { isResetCreditNotePopoverPresented = true }
-                .help(row.resetCreditDetailText ?? "")
-                .accessibilityLabel(row.resetCreditAccessibilityLabel ?? "")
-                .popover(isPresented: $isResetCreditNotePopoverPresented) {
-                    Text([row.resetCreditDetailText, row.resetCreditNoteText].compactMap { $0 }.joined(separator: "\n"))
-                        .font(.callout).padding(12).frame(width: 280)
+                if row.usageWindows.isEmpty {
+                    Text("—").font(.footnote).foregroundStyle(CodexBarMenuStyle.secondary)
+                }
+                if let count = row.resetCreditCount, count > 0 {
+                    Divider()
+                    resetCredits(count: count)
                 }
             }
-            if let warningText = row.warningText, !warningText.isEmpty {
-                Button { isAccountWarningPopoverPresented = true } label: {
-                    Label(warningText, systemImage: "exclamationmark.circle.fill").lineLimit(1)
+            .padding(.horizontal, CodexBarMenuStyle.horizontalPadding)
+            .padding(.top, CodexBarMenuStyle.usageTopPadding)
+            .padding(.bottom, CodexBarMenuStyle.sectionBottomPadding)
+        }
+        .foregroundStyle(CodexBarMenuStyle.primary)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: CodexBarMenuStyle.headerLineSpacing) {
+            HStack(alignment: .firstTextBaseline, spacing: CodexBarMenuStyle.headerColumnSpacing) {
+                Text("#\(number)")
+                    .font(.headline).fontWeight(.semibold)
+                    .lineLimit(1).layoutPriority(1)
+                Spacer(minLength: 0)
+                HStack(spacing: 6) {
+                    Text(row.name).font(.subheadline)
+                        .foregroundStyle(CodexBarMenuStyle.secondary)
+                        .lineLimit(1).truncationMode(.middle)
+                        .help(row.name)
+                    if row.isActive {
+                        Text(L10n.text("account.current_badge"))
+                            .font(.caption)
+                            .foregroundStyle(CodexBarMenuStyle.secondary)
+                            .fixedSize()
+                            .accessibilityLabel(L10n.text("menu_bar.section.active"))
+                    } else {
+                        Button(L10n.text("menu_bar.action.switch")) { switchAccount(row.id) }
+                            .buttonStyle(.bordered)
+                            .controlSize(.mini)
+                            .fixedSize()
+                            .disabled(isSwitching)
+                            .accessibilityLabel(L10n.text("menu_bar.action.switch") + " " + row.name)
+                    }
                 }
-                .buttonStyle(.plain).foregroundStyle(.orange)
-                .help(warningText)
-                .popover(isPresented: $isAccountWarningPopoverPresented) {
-                    Text(warningText).padding(12).frame(width: 280)
+
+            }
+            HStack(alignment: .firstTextBaseline, spacing: CodexBarMenuStyle.headerColumnSpacing) {
+                if let warning = row.warningText, !warning.isEmpty {
+                    Button { isAccountWarningPopoverPresented = true } label: {
+                        Text(warning).font(.footnote).foregroundStyle(Color(nsColor: .systemRed))
+                            .lineLimit(4).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $isAccountWarningPopoverPresented) {
+                        Text(warning).padding(12).frame(width: 280)
+                    }
+                } else {
+                    Text(updatedText).font(.footnote)
+                        .foregroundStyle(CodexBarMenuStyle.secondary).lineLimit(1).layoutPriority(1)
                 }
+                Spacer(minLength: 0)
+                plan
             }
         }
-        .font(.caption)
-        .monospacedDigit()
-        .padding(12)
+    }
+
+    @ViewBuilder
+    private var plan: some View {
+        if let planText = row.planBadgeText {
+            if let subscription = row.subscription {
+                Button { isSubscriptionPopoverPresented = true } label: {
+                    HStack(spacing: 3) {
+                        Text(planText + " · " + subscription.compactDateText)
+                        if subscription.needsUpdate { Image(systemName: "clock.badge.exclamationmark") }
+                    }
+                    .font(.footnote).lineLimit(1)
+                    .foregroundStyle(CodexBarMenuStyle.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(subscription.text + "\n" + subscription.detail)
+                .accessibilityLabel(planText + ". " + subscription.text)
+                .popover(isPresented: $isSubscriptionPopoverPresented) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(subscription.text).font(.headline)
+                        Text(subscription.detail).font(.callout)
+                    }
+                    .padding(12).frame(width: 280)
+                }
+            } else {
+                Text(planText).font(.footnote).foregroundStyle(CodexBarMenuStyle.secondary).lineLimit(1)
+            }
+        }
+    }
+
+    private func resetCredits(count: Int) -> some View {
+        Button { isResetCreditNotePopoverPresented = true } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.text("codexbar.reset_credits"))
+                    .font(.body).fontWeight(.medium).lineLimit(1)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(L10n.text("menu_bar.reset_credit.count_format", count))
+                        .font(.footnote.weight(.semibold)).lineLimit(1).layoutPriority(1)
+                    Spacer(minLength: 8)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Image(systemName: "clock").font(.caption2)
+                        Text(row.resetCreditCountdown ?? "—").font(.caption)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                    .foregroundStyle(CodexBarMenuStyle.secondary)
+                    .accessibilityHidden(true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(row.resetCreditDetailText ?? "")
+        .accessibilityLabel(row.resetCreditAccessibilityLabel ?? "")
+        .popover(isPresented: $isResetCreditNotePopoverPresented) {
+            Text([row.resetCreditDetailText, row.resetCreditNoteText].compactMap { $0 }.joined(separator: "\n"))
+                .font(.callout).padding(12).frame(width: 280)
+        }
+    }
+}
+
+private struct CodexBarMetricRow: View {
+    let window: MenuBarUsageWindow
+
+    private var title: String {
+        "\(window.title) \(window.remainingPercent)% \(L10n.text("codexbar.left"))"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let reset = window.resetText {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        titleLabel.fixedSize(horizontal: true, vertical: false)
+                        Spacer(minLength: 8)
+                        resetLabel(reset).fixedSize(horizontal: true, vertical: false)
+                    }
+                    VStack(alignment: .trailing, spacing: 2) {
+                        titleLabel.frame(maxWidth: .infinity, alignment: .leading)
+                        resetLabel(reset)
+                    }
+                }
+            } else {
+                titleLabel
+            }
+            CodexBarUsageProgressBar(percent: Double(window.remainingPercent),
+                pacePercent: window.pace?.expectedRemainingPercent,
+                paceOnTop: window.pace?.isInReserve ?? true)
+            if let pace = window.pace {
+                Text(pace.text)
+                    .font(.footnote).foregroundStyle(CodexBarMenuStyle.secondary)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var titleLabel: some View {
+        Text(title).font(.body).fontWeight(.medium).lineLimit(1)
+    }
+
+    private func resetLabel(_ text: String) -> some View {
+        Text(text).font(.footnote).foregroundStyle(CodexBarMenuStyle.secondary)
+            .lineLimit(2).multilineTextAlignment(.trailing)
     }
 }
 
@@ -259,9 +344,10 @@ extension MenuBarDashboardView {
     @MainActor
     static func debugAccountRowView(
         row: MenuBarAccountRow,
+        updatedText: String = "",
         switchAccount: @escaping (UUID) -> Void = { _ in }
     ) -> some View {
-        AccountRowView(row: row, switchAccount: switchAccount)
+        AccountRowView(row: row, updatedText: updatedText, switchAccount: switchAccount)
     }
 
     @MainActor

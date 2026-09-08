@@ -658,3 +658,21 @@
 "account.subscription.record_help" = "來自登入資訊的訂閱有效期記錄，並非即時帳單狀態，也不代表確定的續費或取消日期。";
 "account.subscription.checked_at" = "記錄檢查時間：%@";
 "account.subscription.stale_help" = "記錄中的日期已過。可重新登入更新；訂閱可能已自動續費。";
+
+/* CodexBar menu wording; MIT attribution in ThirdPartyNotices/CodexBar.txt. */
+"codexbar.session" = "工作階段";
+"codexbar.weekly" = "每週";
+"codexbar.left" = "剩餘";
+"codexbar.resets_in" = "%@ 後重置";
+"codexbar.resets_now" = "正在重置";
+"codexbar.on_pace" = "用量正常";
+"codexbar.deficit" = "比目前進度多用 %d%%";
+"codexbar.reserve" = "比目前進度少用 %d%%";
+"codexbar.lasts" = "可撐到重置";
+"codexbar.headroom" = "1.5 倍餘裕";
+"codexbar.runs_out" = "%@ 後用完";
+"codexbar.runs_out_now" = "現在用完";
+"codexbar.projected_empty" = "預估 %@ 後用完";
+"codexbar.projected_empty_now" = "預估現在用完";
+"codexbar.reset_credits" = "限額重設額度";
+"codexbar.now" = "現在";

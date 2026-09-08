@@ -33,13 +33,15 @@ struct ReadmeMenuBarScreenshotGenerationTests {
             withIntermediateDirectories: true
         )
 
-        let previousLanguage = UserDefaults.standard.object(forKey: L10n.languageOverrideKey)
+        testLanguageOverrideMutationLock.lock()
+        defer { testLanguageOverrideMutationLock.unlock() }
+        let previousLanguage = AppRuntimeStorage.defaults.object(forKey: L10n.languageOverrideKey)
         let previousTimeZone = NSTimeZone.default
         defer {
             if let previousLanguage {
-                UserDefaults.standard.set(previousLanguage, forKey: L10n.languageOverrideKey)
+                AppRuntimeStorage.defaults.set(previousLanguage, forKey: L10n.languageOverrideKey)
             } else {
-                UserDefaults.standard.removeObject(forKey: L10n.languageOverrideKey)
+                AppRuntimeStorage.defaults.removeObject(forKey: L10n.languageOverrideKey)
             }
             NSTimeZone.default = previousTimeZone
         }
@@ -48,7 +50,7 @@ struct ReadmeMenuBarScreenshotGenerationTests {
         NSTimeZone.default = taipei
 
         for locale in ScreenshotLocale.allCases {
-            UserDefaults.standard.set(locale.languageCode, forKey: L10n.languageOverrideKey)
+            AppRuntimeStorage.defaults.set(locale.languageCode, forKey: L10n.languageOverrideKey)
             let model = AppPoolRuntimeModel(
                 store: ReadmeScreenshotStore(snapshot: Self.mockState.snapshot),
                 initialState: Self.mockState,
@@ -79,10 +81,23 @@ struct ReadmeMenuBarScreenshotGenerationTests {
 
                 let data = try Self.renderPNG(
                     view,
-                    size: CGSize(width: 340, height: 620),
+                    size: CGSize(width: CodexBarMenuStyle.width, height: 620),
                     dark: dark
                 )
                 try data.write(to: outputDirectory.appendingPathComponent(dark ? locale.fileName : "light-" + locale.fileName))
+                if locale.languageCode == "zh-Hans" {
+                    var referenceRow = model.menuBarSnapshot.accountRows[0]
+                    referenceRow.subscription = nil
+                    referenceRow.usageWindows = referenceRow.usageWindows.filter { $0.id == "weekly" }
+                    let reference = MenuBarDashboardView.debugAccountRowView(row: referenceRow,
+                        updatedText: L10n.text("menu_bar.updated.format", L10n.text("menu_bar.reset.now")))
+                        .frame(width: CodexBarMenuStyle.width)
+                        .background(CodexBarMenuMaterial())
+                        .preferredColorScheme(dark ? .dark : .light)
+                    let block = try Self.renderPNG(reference, size: CGSize(width: CodexBarMenuStyle.width, height: 180), dark: dark)
+                    try block.write(to: outputDirectory.appendingPathComponent(dark ? "codexbar-block-dark.png" : "codexbar-block-light.png"))
+                }
+
             }
         }
     }
@@ -115,15 +130,15 @@ struct ReadmeMenuBarScreenshotGenerationTests {
                 createdAt: date(year: 2026, month: 6, day: 20, hour: 10, minute: 0),
                 name: "pro@example.com",
                 groupName: "Default",
-                usedUnits: 90,
+                usedUnits: 180,
                 quota: 1000,
                 apiToken: "mock-token-pro",
                 email: "pro@example.com",
                 chatGPTAccountID: "acct_demo_pro",
                 usageWindowName: "weekly",
-                usageWindowResetAt: date(year: 2026, month: 7, day: 7, hour: 9, minute: 55),
-                primaryUsagePercent: 6,
-                primaryUsageResetAt: date(year: 2026, month: 7, day: 1, hour: 12, minute: 9),
+                usageWindowResetAt: referenceNow.addingTimeInterval(6 * 24 * 3600 + 14 * 3600),
+                primaryUsagePercent: 35,
+                primaryUsageResetAt: referenceNow.addingTimeInterval(2 * 3600 + 10 * 60),
                 oauthIDToken: mockSubscriptionToken(accountID: "acct_demo_pro", until: "2026-07-31T20:30:07Z"),
                 isPaid: true,
                 planType: "pro",
@@ -147,7 +162,7 @@ struct ReadmeMenuBarScreenshotGenerationTests {
                 usageWindowName: "weekly",
                 usageWindowResetAt: date(year: 2026, month: 7, day: 8, hour: 11, minute: 56),
                 primaryUsagePercent: 1,
-                primaryUsageResetAt: date(year: 2026, month: 7, day: 2, hour: 16, minute: 7),
+                primaryUsageResetAt: referenceNow.addingTimeInterval(4 * 3600),
                 oauthIDToken: mockSubscriptionToken(accountID: "acct_demo_plus", until: "2026-06-30T20:30:07Z"),
                 isPaid: true,
                 planType: "plus",

@@ -50,7 +50,7 @@ enum L10n {
     }
 
     private static var selectedOverrideLanguageCode: String? {
-        guard let value = UserDefaults.standard.string(forKey: languageOverrideKey),
+        guard let value = AppRuntimeStorage.defaults.string(forKey: languageOverrideKey),
               value != systemLanguageCode,
               supportedLanguageCodes.contains(value)
         else {

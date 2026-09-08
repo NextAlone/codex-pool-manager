@@ -520,7 +520,7 @@ struct AppPoolRuntimeModelTests {
             menuBarClockIntervalNanoseconds: 1_000_000,
             menuBarNowProvider: {
                 let date = baseDate.addingTimeInterval(nowOffset)
-                nowOffset += 20
+                nowOffset += 120 // Cross the update-label minute boundary.
                 return date
             },
             widgetPublisher: { snapshot in
@@ -529,6 +529,7 @@ struct AppPoolRuntimeModelTests {
         )
         let initialMenuBarNow = model.menuBarNow
         let initialTitle = model.menuBarSnapshot.title
+        let initialUpdatedText = model.menuBarSnapshot.updatedText
         let (ticks, tickContinuation) = AsyncStream<Date>.makeStream()
         var cancellables = Set<AnyCancellable>()
         model.$menuBarNow
@@ -542,7 +543,8 @@ struct AppPoolRuntimeModelTests {
 
         #expect(tickedDate != nil)
         #expect(model.menuBarNow != initialMenuBarNow)
-        #expect(model.menuBarSnapshot.title != initialTitle)
+        #expect(model.menuBarSnapshot.title == initialTitle)
+        #expect(model.menuBarSnapshot.updatedText != initialUpdatedText)
         #expect(store.savedSnapshots.isEmpty)
         #expect(publishedSnapshots.count == 1)
     }

@@ -360,7 +360,7 @@ struct PoolDashboardView: View {
     @AppStorage("oauth_redirect_uri") private var oauthRedirectURI = OAuthClientConfiguration.defaultRedirectURI
     @AppStorage("oauth_originator") private var oauthOriginator = OAuthClientConfiguration.defaultOriginator
     @AppStorage("oauth_workspace_id") private var oauthWorkspaceID = ""
-    @AppStorage(L10n.languageOverrideKey) private var appLanguageOverride = L10n.systemLanguageCode
+    @AppStorage(L10n.languageOverrideKey, store: AppRuntimeStorage.defaults) private var appLanguageOverride = L10n.systemLanguageCode
     @AppStorage(AppAppearancePreference.storageKey) private var appAppearanceOverride = AppAppearancePreference.system.rawValue
     @AppStorage(Self.developerMockModeKey) private var developerMockModeEnabled = false
     @AppStorage(Self.switchLaunchTargetKey) private var switchLaunchTargetRaw = CodexLaunchTarget.defaultPickerTarget.rawValue

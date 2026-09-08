@@ -2186,6 +2186,6 @@ struct ViewSmokeCoverageTests {
             ),
             now: now
         )
-        #expect(fallbackTitle == "Codex -- · 1h")
+        #expect(fallbackTitle == "Codex --")
     }
 }

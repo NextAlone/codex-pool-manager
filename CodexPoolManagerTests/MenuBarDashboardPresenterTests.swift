@@ -3,13 +3,13 @@ import Darwin
 import Testing
 @testable import CodexPoolManager
 
-private let menuBarLanguageOverrideMutationLock = NSLock()
+private let menuBarLanguageOverrideMutationLock = testLanguageOverrideMutationLock
 
 private func withMenuBarLanguageOverride(_ languageCode: String, _ body: () throws -> Void) rethrows {
     menuBarLanguageOverrideMutationLock.lock()
     defer { menuBarLanguageOverrideMutationLock.unlock() }
 
-    let defaults = UserDefaults.standard
+    let defaults = AppRuntimeStorage.defaults
     let key = L10n.languageOverrideKey
     let previous = defaults.object(forKey: key)
     defer {
@@ -32,7 +32,7 @@ private func withMenuBarLanguageAndTimeZoneOverride(
     menuBarLanguageOverrideMutationLock.lock()
     defer { menuBarLanguageOverrideMutationLock.unlock() }
 
-    let defaults = UserDefaults.standard
+    let defaults = AppRuntimeStorage.defaults
     let key = L10n.languageOverrideKey
     let previousLanguage = defaults.object(forKey: key)
     let previousTimeZone = NSTimeZone.default
@@ -58,7 +58,7 @@ private func withMenuBarLanguageAndCurrentTimeZoneIdentifierOverride(
     menuBarLanguageOverrideMutationLock.lock()
     defer { menuBarLanguageOverrideMutationLock.unlock() }
 
-    let defaults = UserDefaults.standard
+    let defaults = AppRuntimeStorage.defaults
     let key = L10n.languageOverrideKey
     let previousLanguage = defaults.object(forKey: key)
     let previousTimeZoneEnvironment = getenv("TZ").map { String(cString: $0) }
@@ -154,7 +154,7 @@ struct MenuBarDashboardPresenterTests {
             now: Date(timeIntervalSince1970: 1_030)
         )
 
-        #expect(snapshot.title == "Codex w 80% · 5h 75% · 30s")
+        #expect(snapshot.title == "Codex w 80% · 5h 75%")
         #expect(snapshot.totalAccountsText == "2")
         #expect(snapshot.availableAccountsText == "2")
         #expect(snapshot.modeText == L10n.text("mode.manual"))
@@ -754,7 +754,7 @@ struct CompactMenuBarUsageTests {
     @Test func countdownHandlesMissingExpiredAndFutureDates() {
         let now = Date(timeIntervalSince1970: 100000)
         #expect(MenuBarDashboardPresenter.countdown(to: nil, now: now) == "—")
-        #expect(MenuBarDashboardPresenter.countdown(to: now.addingTimeInterval(-60), now: now) == "0m")
+        #expect(MenuBarDashboardPresenter.countdown(to: now.addingTimeInterval(-60), now: now) == L10n.text("codexbar.now"))
         #expect(MenuBarDashboardPresenter.countdown(to: now.addingTimeInterval(90060), now: now) == "1d 1h")
     }
 

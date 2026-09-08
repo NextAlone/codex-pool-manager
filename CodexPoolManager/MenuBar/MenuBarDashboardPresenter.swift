@@ -78,7 +78,8 @@ struct MenuBarUsageWindow: Identifiable, Equatable {
     let id: String
     let title: String
     let remainingPercent: Int
-    let resetText: String
+    let resetText: String?
+    var pace: CodexBarPacePresentation? = nil
 }
 
 struct MenuBarWarningRow: Identifiable, Equatable {
@@ -198,34 +199,42 @@ enum MenuBarDashboardPresenter {
             resetCreditCount: account.rateLimitResetCreditsAvailableCount,
             resetCreditCountdown: account.rateLimitResetCreditEstimatedExpiries.isEmpty ? nil :
                 (account.rateLimitResetCreditExpirySource == .api ? "" : "≈ ") +
-                account.rateLimitResetCreditEstimatedExpiries.map { countdown(to: $0, now: now) }.joined(separator: " · ")
+                resetCreditExpirySummary(account.rateLimitResetCreditEstimatedExpiries, now: now)
         )
     }
 
     static func usageWindows(for account: AgentAccount, now: Date) -> [MenuBarUsageWindow] {
         guard !account.isRelayAPIKeyAccount else { return [] }
+        let allowsPace = !account.isUsageSyncExcluded && (account.usageSyncError?.isEmpty != false)
+        func window(id: String, title: String, remaining: Int, reset: Date?, minutes: Int) -> MenuBarUsageWindow {
+            MenuBarUsageWindow(id: id, title: L10n.text(title), remainingPercent: remaining,
+                resetText: CodexBarCountdown.resetText(date: reset, now: now),
+                pace: allowsPace ? CodexBarPacePresentation.make(usedPercent: Double(100 - remaining),
+                    resetsAt: reset, windowMinutes: minutes, now: now, isSession: id == "5h") : nil)
+        }
         var windows: [MenuBarUsageWindow] = []
         if let usage = account.primaryUsagePercent {
-            windows.append(MenuBarUsageWindow(id: "5h", title: L10n.text("usage.five_hour_short"),
-                remainingPercent: min(100, max(0, 100 - usage)),
-                resetText: countdown(to: account.primaryUsageResetAt, now: now)))
+            windows.append(window(id: "5h", title: "codexbar.session",
+                remaining: min(100, max(0, 100 - usage)), reset: account.primaryUsageResetAt, minutes: 300))
         }
         if account.secondaryUsagePercent != nil || account.usageWindowName == "weekly" {
             let remaining = account.secondaryUsagePercent.map { min(100, max(0, 100 - $0)) }
                 ?? Int((account.remainingRatio * 100).rounded())
-            windows.append(MenuBarUsageWindow(id: "weekly", title: L10n.text("usage.weekly_short"),
-                remainingPercent: remaining,
-                resetText: countdown(to: account.secondaryUsageResetAt ?? account.usageWindowResetAt, now: now)))
+            windows.append(window(id: "weekly", title: "codexbar.weekly", remaining: remaining,
+                reset: account.secondaryUsageResetAt ?? account.usageWindowResetAt, minutes: 10080))
         }
         return windows
     }
 
     static func countdown(to date: Date?, now: Date) -> String {
         guard let date else { return "—" }
-        let minutes = max(0, Int(ceil(date.timeIntervalSince(now) / 60)))
-        if minutes >= 1440 { return "\(minutes / 1440)d \((minutes % 1440) / 60)h" }
-        if minutes >= 60 { return "\(minutes / 60)h \(minutes % 60)m" }
-        return "\(minutes)m"
+        return CodexBarCountdown.expiryText(date: date, now: now)
+    }
+
+    private static func resetCreditExpirySummary(_ expiries: [Date], now: Date) -> String {
+        let visible = expiries.prefix(4).map { countdown(to: $0, now: now) }
+        let suffix = expiries.count > 4 ? ["+\(expiries.count - 4)"] : []
+        return (visible + suffix).joined(separator: " · ")
     }
 
     private static func orderedAccounts(

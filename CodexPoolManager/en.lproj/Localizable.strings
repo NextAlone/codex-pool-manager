@@ -666,3 +666,21 @@
 "account.subscription.record_help" = "Subscription validity recorded in sign-in data; this is not live billing status or a confirmed renewal/cancellation date.";
 "account.subscription.checked_at" = "Record checked: %@";
 "account.subscription.stale_help" = "This recorded date has passed. Sign in again to update it; your subscription may have renewed.";
+
+/* CodexBar menu wording; MIT attribution in ThirdPartyNotices/CodexBar.txt. */
+"codexbar.session" = "Session";
+"codexbar.weekly" = "Weekly";
+"codexbar.left" = "left";
+"codexbar.resets_in" = "Resets in %@";
+"codexbar.resets_now" = "Resets now";
+"codexbar.on_pace" = "On pace";
+"codexbar.deficit" = "%d%% in deficit";
+"codexbar.reserve" = "%d%% in reserve";
+"codexbar.lasts" = "Lasts until reset";
+"codexbar.headroom" = "1.5× headroom";
+"codexbar.runs_out" = "Runs out in %@";
+"codexbar.runs_out_now" = "Runs out now";
+"codexbar.projected_empty" = "Projected empty in %@";
+"codexbar.projected_empty_now" = "Projected empty now";
+"codexbar.reset_credits" = "Limit Reset Credits";
+"codexbar.now" = "now";

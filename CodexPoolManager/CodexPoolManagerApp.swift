@@ -10,7 +10,7 @@ import AppKit
 
 @main
 struct CodexPoolManagerApp: App {
-    @AppStorage(L10n.languageOverrideKey) private var appLanguageOverride = L10n.systemLanguageCode
+    @AppStorage(L10n.languageOverrideKey, store: AppRuntimeStorage.defaults) private var appLanguageOverride = L10n.systemLanguageCode
     @StateObject private var runtimeModel: AppPoolRuntimeModel
     @Environment(\.openWindow) private var openWindow
     
@@ -234,28 +234,10 @@ enum MenuBarSnapshotFormatter {
             segments.append("5h \(fiveHourLeft)%")
         }
 
-        segments.append(shortAgeText(since: snapshot.updatedAt, now: now))
-
         return "Codex " + segments.joined(separator: " · ")
     }
 
-    static func shortAgeText(
-        since date: Date,
-        now: Date = Date()
-    ) -> String {
-        let seconds = max(0, Int(now.timeIntervalSince(date)))
-        if seconds < 10 { return "now" }
-        if seconds < 60 { return "\(seconds)s" }
 
-        let minutes = seconds / 60
-        if minutes < 60 { return "\(minutes)m" }
-
-        let hours = minutes / 60
-        if hours < 24 { return "\(hours)h" }
-
-        let days = hours / 24
-        return "\(days)d"
-    }
 }
 
 #if DEBUG

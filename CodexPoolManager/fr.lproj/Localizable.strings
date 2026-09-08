@@ -657,3 +657,21 @@
 "account.subscription.record_help" = "Validité enregistrée lors de la connexion, et non un état de facturation en temps réel ni une date de renouvellement ou de résiliation confirmée.";
 "account.subscription.checked_at" = "Vérification du relevé : %@";
 "account.subscription.stale_help" = "Cette date est passée. Reconnectez-vous pour actualiser le relevé ; votre abonnement a peut-être été renouvelé.";
+
+/* CodexBar menu wording; MIT attribution in ThirdPartyNotices/CodexBar.txt. */
+"codexbar.session" = "Session";
+"codexbar.weekly" = "Hebdomadaire";
+"codexbar.left" = "restant";
+"codexbar.resets_in" = "Réinitialisé dans %@";
+"codexbar.resets_now" = "Réinitialise maintenant";
+"codexbar.on_pace" = "Au rythme";
+"codexbar.deficit" = "%d%% en déficit";
+"codexbar.reserve" = "%d%% en réserve";
+"codexbar.lasts" = "Dure jusqu'à la réinitialisation";
+"codexbar.headroom" = "marge de 1,5×";
+"codexbar.runs_out" = "S'épuise dans %@";
+"codexbar.runs_out_now" = "S'épuise maintenant";
+"codexbar.projected_empty" = "Projeté vide dans %@";
+"codexbar.projected_empty_now" = "Projeté vide maintenant";
+"codexbar.reset_credits" = "Crédits de réinitialisation de limite";
+"codexbar.now" = "now";

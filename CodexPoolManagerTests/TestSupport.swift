@@ -1,6 +1,9 @@
 import Foundation
 @testable import CodexPoolManager
 
+// Shared by every localization test and screenshot run; nested overrides restore in order.
+let testLanguageOverrideMutationLock = NSRecursiveLock()
+
 struct MockCodexUsageClient: CodexUsageClient {
     let responseByToken: [String: CodexUsage]
     var shouldThrow: Bool = false
