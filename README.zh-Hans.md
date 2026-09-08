@@ -201,6 +201,19 @@ Focus 模式不会进行智能自动切换。
 
 ## 认证与账号导入
 
+### Codex Router 兼容（本地分支）
+
+设置 → 通用设置中的“切换 ChatGPT 账号时保留路由配置”默认开启。
+手动、菜单栏和自动 OAuth 切号只更新账号认证，不读取或修改相邻的
+`config.toml`，因此保留 Codex Router 的 `openai_base_url`、模型目录、
+provider 设置、注释、文件权限及符号链接。关闭此选项会恢复上游重置
+provider 并删除 `openai_base_url` 的行为。
+
+切号前退出 Codex，切换后重新打开以加载新账号；此功能不提供多账号并发或
+运行中任务的热切换。Codex 工作期间请关闭自动切号。此选项不影响
+API Key / Relay 启用流程；外部模型请继续在 Codex Router 中管理。
+安装上游应用更新会覆盖本地适配。
+
 ### 本地账号扫描路径
 
 会扫描以下常见 auth JSON 路径：

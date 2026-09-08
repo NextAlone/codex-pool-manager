@@ -204,7 +204,10 @@ struct PoolDashboardSwitchLaunchCoordinator {
         launchTarget: CodexLaunchTarget,
         logger: @Sendable @escaping (String) -> Void
     ) async throws {
-        let service = CodexAuthSwitchService(logger: logger)
+        let service = CodexAuthSwitchService(
+            logger: logger,
+            preserveRouting: CodexAuthSwitchService.preserveRoutingEnabled()
+        )
         if switchWithoutLaunching {
             try service.performSwitchOnly(
                 authFileURL: authFileURL,

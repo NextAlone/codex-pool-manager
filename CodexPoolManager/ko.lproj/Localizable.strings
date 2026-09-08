@@ -646,3 +646,6 @@
 "menu_bar.reset_credit.per_credit_expiry_format" = "%d번째 초기화 만료: %@";
 "menu_bar.reset_credit.accessibility_format" = "사용 가능한 초기화 %d회, 예상 만료 %@";
 "menu_bar.reset_credit.actual_accessibility_format" = "사용 가능한 초기화 %d회, 다음 만료 %@";
+"settings.preserve_routing" = "ChatGPT 계정 전환 시 라우팅 설정 유지";
+"settings.preserve_routing_hint" = "Codex Router 및 기존 라우팅 설정을 유지합니다. 수동·자동 OAuth 전환에 적용되며 API Key / Relay 활성화에는 적용되지 않습니다. 전환 전에 Codex를 종료하고 전환 후 다시 여세요.";
+"switch.service.log.routing_preserved" = "기존 라우팅 설정을 유지했습니다.";

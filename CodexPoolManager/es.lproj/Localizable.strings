@@ -646,3 +646,6 @@
 "menu_bar.reset_credit.per_credit_expiry_format" = "Vencimiento del restablecimiento %d: %@";
 "menu_bar.reset_credit.accessibility_format" = "%d restablecimientos, vencimiento estimado %@";
 "menu_bar.reset_credit.actual_accessibility_format" = "%d restablecimientos, próximo vencimiento %@";
+"settings.preserve_routing" = "Conservar rutas al cambiar de cuenta de ChatGPT";
+"settings.preserve_routing_hint" = "Conserva Codex Router y las rutas existentes. Se aplica a cambios OAuth manuales y automáticos, no a la activación de API Key / Relay. Cierra Codex antes de cambiar y vuelve a abrirlo después.";
+"switch.service.log.routing_preserved" = "Se conservó la configuración de rutas existente.";

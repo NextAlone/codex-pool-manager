@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct WorkspaceSettingsPanelView: View {
+    @AppStorage(CodexAuthSwitchService.preserveRoutingPreferenceKey)
+    private var preserveRouting = CodexAuthSwitchService.preserveRoutingDefault
+
     let switchWithoutLaunchingBinding: Binding<Bool>
     let launchTargetBinding: Binding<String>
     let autoSyncEnabledBinding: Binding<Bool>
@@ -51,6 +54,17 @@ struct WorkspaceSettingsPanelView: View {
                     .tint(PoolDashboardTheme.glowA)
                     .foregroundStyle(PoolDashboardTheme.textSecondary)
                     .dashboardInfoCard()
+
+                VStack(alignment: .leading, spacing: PoolDashboardTheme.compactFieldSpacing) {
+                    Toggle(L10n.text("settings.preserve_routing"), isOn: $preserveRouting)
+                        .toggleStyle(.switch)
+                        .tint(PoolDashboardTheme.glowA)
+                        .foregroundStyle(PoolDashboardTheme.textSecondary)
+                    Text(L10n.text("settings.preserve_routing_hint"))
+                        .font(.caption)
+                        .foregroundStyle(PoolDashboardTheme.textMuted)
+                }
+                .dashboardInfoCard()
 
                 VStack(alignment: .leading, spacing: PoolDashboardTheme.compactFieldSpacing) {
                     Text(L10n.text("strategy.launch_target"))

@@ -646,3 +646,6 @@
 "menu_bar.reset_credit.per_credit_expiry_format" = "リセット%d回目の期限：%@";
 "menu_bar.reset_credit.accessibility_format" = "利用可能なリセット%d回、推定有効期限%@";
 "menu_bar.reset_credit.actual_accessibility_format" = "利用可能なリセット%d回、次の有効期限%@";
+"settings.preserve_routing" = "ChatGPT アカウント切替時にルーティング設定を保持";
+"settings.preserve_routing_hint" = "Codex Router と既存のルーティング設定を保持します。手動・自動の OAuth 切替に適用され、API Key / Relay の有効化には適用されません。切替前に Codex を終了し、切替後に再起動してください。";
+"switch.service.log.routing_preserved" = "既存のルーティング設定を保持しました。";

@@ -176,8 +176,16 @@ enum CodexLaunchTarget: String, CaseIterable, Identifiable, Codable {
 }
 
 struct CodexAuthSwitchService {
+    static let preserveRoutingPreferenceKey = "pool_dashboard.preserve_routing_on_oauth_switch"
+    static let preserveRoutingDefault = true
+
+    static func preserveRoutingEnabled(defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: preserveRoutingPreferenceKey) as? Bool ?? preserveRoutingDefault
+    }
+
     var logger: @Sendable (String) -> Void = { _ in }
     private let providerConfigResetter: (URL) throws -> Void
+    private let preserveRouting: Bool
 
     private let autoLaunchOrder: [CodexLaunchTarget] = [
         .chatgpt,
@@ -202,12 +210,14 @@ struct CodexAuthSwitchService {
 
     init(
         logger: @escaping @Sendable (String) -> Void = { _ in },
+        preserveRouting: Bool = Self.preserveRoutingDefault,
         providerConfigResetter: @escaping (URL) throws -> Void = { authFileURL in
             let configURL = authFileURL.deletingLastPathComponent().appendingPathComponent("config.toml")
             try CodexProviderConfigService(configURLProvider: { configURL }).resetToDefaultModelProvider()
         }
     ) {
         self.logger = logger
+        self.preserveRouting = preserveRouting
         self.providerConfigResetter = providerConfigResetter
     }
 
@@ -521,6 +531,12 @@ struct CodexAuthSwitchService {
     }
 
     private func resetProviderConfigForChatGPTAuth(authFileURL: URL) throws {
+        // Router-owned config is opaque: do not parse, rewrite, or re-permission it.
+        // Both switch paths reach this guard, including background/menu-bar switches.
+        if preserveRouting {
+            logger(L10n.text("switch.service.log.routing_preserved"))
+            return
+        }
         try providerConfigResetter(authFileURL)
         logger("Codex provider config reset to default model provider.")
     }

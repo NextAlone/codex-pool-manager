@@ -655,3 +655,6 @@
 "menu_bar.reset_credit.per_credit_expiry_format" = "Reset %d expiry: %@";
 "menu_bar.reset_credit.accessibility_format" = "%d banked resets, estimated expiry %@";
 "menu_bar.reset_credit.actual_accessibility_format" = "%d banked resets, next expiry %@";
+"settings.preserve_routing" = "Preserve routing when switching ChatGPT accounts";
+"settings.preserve_routing_hint" = "Keep Codex Router and existing routing settings unchanged. Applies to manual and automatic OAuth switches, not API Key / Relay activation. Quit Codex before switching, then reopen it to load the new account.";
+"switch.service.log.routing_preserved" = "Existing routing configuration preserved.";

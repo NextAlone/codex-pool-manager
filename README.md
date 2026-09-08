@@ -200,6 +200,21 @@ These are intentionally independent.
 
 ## Authentication and Account Import
 
+### Codex Router compatibility (local fork)
+
+Settings → General Settings → **Preserve routing when switching ChatGPT accounts**
+is enabled by default. Manual, menu-bar, and automatic OAuth switches update the
+account credentials without opening or modifying the adjacent `config.toml`.
+This preserves Codex Router's `openai_base_url`, model catalog, provider settings,
+comments, file permissions, and symlinks. Turn it off to restore the upstream
+behavior that resets the active provider and removes `openai_base_url`.
+
+Quit Codex before switching, then reopen it to load the new account; this option
+does not provide concurrent accounts or hot-switch in-flight tasks. Keep automatic
+switching off while Codex is doing work. API Key / Relay activation still owns its
+provider configuration and is outside this option; manage external providers in
+Codex Router instead. Upstream app updates can replace this local adaptation.
+
 ### Local account discovery paths
 
 The app scans local auth JSON from common locations:

@@ -58,6 +58,93 @@ private func withTemporaryAuthFile(
     try body(url)
 }
 
+struct CodexRouterCompatibilityTests {
+    @Test
+    func routingPreferenceDefaultsToPreserveAndPersistsExplicitChoice() throws {
+        let suite = "router-preference-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        #expect(CodexAuthSwitchService.preserveRoutingEnabled(defaults: defaults))
+        defaults.set(false, forKey: CodexAuthSwitchService.preserveRoutingPreferenceKey)
+        #expect(!CodexAuthSwitchService.preserveRoutingEnabled(defaults: defaults))
+        defaults.set(true, forKey: CodexAuthSwitchService.preserveRoutingPreferenceKey)
+        #expect(CodexAuthSwitchService.preserveRoutingEnabled(defaults: defaults))
+    }
+
+    @Test(arguments: [true, false])
+    @MainActor
+    func oauthSwitchPreservesRouterConfigOrExplicitlyResetsIt(preserve: Bool) throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("router-switch-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let authURL = directory.appendingPathComponent("auth.json")
+        let configURL = directory.appendingPathComponent("config.toml")
+        let targetURL = directory.appendingPathComponent("router-config.toml")
+        let config = """
+        # Router owns this entry; the value is a synthetic test capability.
+        openai_base_url = "http://127.0.0.1:4210/test-caller/v1"
+        model_catalog_json = "/tmp/test-router-models.json"
+        model = "mify/test-model"
+
+        [profiles.work]
+        model_provider = "other"
+        # Keep comments and trailing whitespace exactly.
+        """
+        let original = Data((config + "\n\n").utf8)
+        try original.write(to: targetURL)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: targetURL.path)
+        try FileManager.default.createSymbolicLink(at: configURL, withDestinationURL: targetURL)
+        try Data(#"{"auth_mode":"chatgpt","tokens":{"access_token":"old","account_id":"old"}}"#.utf8)
+            .write(to: authURL)
+        let before = try FileManager.default.attributesOfItem(atPath: targetURL.path)
+        var account = AgentAccount(id: UUID(), name: "Test", usedUnits: 0, quota: 100, apiToken: "new-access")
+        account.oauthRefreshToken = "new-refresh"
+        account.oauthIDToken = "new-id"
+        account.oauthLastRefreshAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let service = CodexAuthSwitchService(preserveRouting: preserve)
+        try service.performSwitchOnly(authFileURL: authURL, account: account, chatGPTAccountID: "new-account")
+
+        let auth = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: authURL)) as? [String: Any])
+        let tokens = try #require(auth["tokens"] as? [String: String])
+        #expect(auth["auth_mode"] as? String == "chatgpt")
+        #expect(tokens["access_token"] == "new-access")
+        #expect(tokens["account_id"] == "new-account")
+        #expect(tokens["refresh_token"] == "new-refresh")
+        #expect(tokens["id_token"] == "new-id")
+        let result = try Data(contentsOf: configURL)
+        if preserve {
+            #expect(result == original)
+            #expect(try FileManager.default.destinationOfSymbolicLink(atPath: configURL.path) == targetURL.path)
+            let after = try FileManager.default.attributesOfItem(atPath: targetURL.path)
+            #expect(after[.posixPermissions] as? Int == 0o600)
+            #expect(after[.modificationDate] as? Date == before[.modificationDate] as? Date)
+        } else {
+            let text = String(decoding: result, as: UTF8.self)
+            #expect(!text.contains("openai_base_url ="))
+            #expect(text.contains("model_catalog_json ="))
+            #expect(text.contains("[profiles.work]"))
+        }
+    }
+
+    @Test
+    @MainActor
+    func defaultPreservationDoesNotInvokeConfigWriterOrCreateMissingConfig() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("router-no-config-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let authURL = directory.appendingPathComponent("auth.json")
+        try Data(#"{"auth_mode":"chatgpt","tokens":{}}"#.utf8).write(to: authURL)
+        let account = AgentAccount(id: UUID(), name: "Test", usedUnits: 0, quota: 100, apiToken: "new")
+        let service = CodexAuthSwitchService(providerConfigResetter: { _ in
+            throw CoverageBoostMockError.expected
+        })
+        try service.performSwitchOnly(authFileURL: authURL, account: account, chatGPTAccountID: "new")
+        #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent("config.toml").path))
+    }
+}
+
 struct CodexAuthSwitchServiceCoverageTests {
     @Test
     func codexLaunchTargetMetadataCoversAllCases() {
@@ -140,6 +227,7 @@ struct CodexAuthSwitchServiceCoverageTests {
         let didResetProviderConfig = LockedValue(false)
         let resetAuthFileURL = LockedValue<URL?>(nil)
         let service = CodexAuthSwitchService(
+            preserveRouting: false,
             providerConfigResetter: { authFileURL in
                 didResetProviderConfig.withLock { $0 = true }
                 resetAuthFileURL.withLock { $0 = authFileURL }
@@ -297,7 +385,7 @@ struct CodexAuthSwitchServiceCoverageTests {
 
     @Test
     @MainActor
-    func codexAuthSwitchServiceDefaultResetterUsesAuthFileDirectoryConfig() throws {
+    func codexAuthSwitchServiceOptOutResetterUsesAuthFileDirectoryConfig() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("codex-auth-config-switch-\(UUID().uuidString)", isDirectory: true)
         let authURL = directory.appendingPathComponent("auth.json")
@@ -321,7 +409,7 @@ struct CodexAuthSwitchServiceCoverageTests {
         requires_openai_auth = true
         """.write(to: configURL, atomically: true, encoding: .utf8)
 
-        let service = CodexAuthSwitchService()
+        let service = CodexAuthSwitchService(preserveRouting: false)
         let account = AgentAccount(
             id: UUID(),
             name: "new-user@example.com",

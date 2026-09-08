@@ -647,3 +647,6 @@
 "menu_bar.reset_credit.per_credit_expiry_format" = "第 %d 次期限：%@";
 "menu_bar.reset_credit.accessibility_format" = "可重置 %d 次，预计 %@ 到期";
 "menu_bar.reset_credit.actual_accessibility_format" = "可重置 %d 次，下次于 %@ 到期";
+"settings.preserve_routing" = "切换 ChatGPT 账号时保留路由配置";
+"settings.preserve_routing_hint" = "保留 Codex Router 和现有路由设置。适用于手动、自动 OAuth 切号，不适用于 API Key / Relay 启用。切号前退出 Codex，之后重新打开以加载新账号。";
+"switch.service.log.routing_preserved" = "已保留现有路由配置。";
