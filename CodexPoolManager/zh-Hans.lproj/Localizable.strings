@@ -652,3 +652,9 @@
 "switch.service.log.routing_preserved" = "已保留现有路由配置。";
 
 "menu_bar.reset_credit.count_format" = "%d 次可用";
+
+"account.subscription.record_until" = "订阅记录至 %@";
+"account.subscription.needs_update" = "待更新";
+"account.subscription.record_help" = "来自登录信息的订阅有效期记录，并非实时账单状态，也不代表确定的续费或取消日期。";
+"account.subscription.checked_at" = "记录检查时间：%@";
+"account.subscription.stale_help" = "记录中的日期已过。可重新登录更新；订阅可能已自动续费。";

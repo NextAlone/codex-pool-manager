@@ -68,6 +68,7 @@ struct MenuBarAccountRow: Identifiable, Equatable {
     let resetText: String
     let fiveHourResetText: String?
     let warningText: String?
+    var subscription: SubscriptionPresentation? = nil
     var usageWindows: [MenuBarUsageWindow] = []
     var resetCreditCount: Int? = nil
     var resetCreditCountdown: String? = nil
@@ -192,6 +193,7 @@ enum MenuBarDashboardPresenter {
             resetText: resetText(for: account.usageWindowResetAt),
             fiveHourResetText: account.isPaid ? resetText(for: account.primaryUsageResetAt) : nil,
             warningText: account.usageSyncError,
+            subscription: SubscriptionPresentationFormatter.presentation(for: account, now: now),
             usageWindows: usageWindows(for: account, now: now),
             resetCreditCount: account.rateLimitResetCreditsAvailableCount,
             resetCreditCountdown: account.rateLimitResetCreditEstimatedExpiries.isEmpty ? nil :

@@ -110,6 +110,14 @@ private struct AccountRowView: View {
                     Text(row.planBadgeText ?? "")
                 }
                 .font(.caption).foregroundStyle(.secondary)
+                if let subscription = row.subscription {
+                    Text(subscription.text)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .help(subscription.detail)
+                        .accessibilityLabel(subscription.text + ". " + subscription.detail)
+                }
             }
             Divider()
             ForEach(row.usageWindows) { window in

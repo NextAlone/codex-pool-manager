@@ -660,3 +660,9 @@
 "switch.service.log.routing_preserved" = "Existing routing configuration preserved.";
 
 "menu_bar.reset_credit.count_format" = "%d available";
+
+"account.subscription.record_until" = "Subscription record until %@";
+"account.subscription.needs_update" = "Update needed";
+"account.subscription.record_help" = "Subscription validity recorded in sign-in data; this is not live billing status or a confirmed renewal/cancellation date.";
+"account.subscription.checked_at" = "Record checked: %@";
+"account.subscription.stale_help" = "This recorded date has passed. Sign in again to update it; your subscription may have renewed.";

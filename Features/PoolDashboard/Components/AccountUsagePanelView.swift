@@ -806,6 +806,7 @@ struct AccountUsagePanelView: View {
     private func fullAccountCardContent(_ account: AgentAccount) -> some View {
         let paidAccount = isPaidAccount(account)
         accountNameRow(account)
+        accountSubscriptionRecord(account)
         accountActionAndWarningRow(account)
 
         if Self.showsUsageMeters(for: account) {
@@ -879,7 +880,7 @@ struct AccountUsagePanelView: View {
 
             HStack(spacing: 6) {
                 if isPaidAccount(account) {
-                    Text(L10n.text("account.paid_badge"))
+                    Text(account.planBadgeText ?? L10n.text("account.paid_badge"))
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(PoolDashboardTheme.textPrimary)
                         .padding(.horizontal, 6)
@@ -897,6 +898,8 @@ struct AccountUsagePanelView: View {
                 compactAccountActionButtons(account)
             }
             .frame(maxWidth: .infinity, alignment: .center)
+
+            accountSubscriptionRecord(account)
 
             if Self.showsUsageMeters(for: account) {
                 HStack(alignment: .top, spacing: 10) {
@@ -1055,7 +1058,7 @@ struct AccountUsagePanelView: View {
                 }
 
                 if isPaidAccount(account) {
-                    Text(L10n.text("account.paid_badge"))
+                    Text(account.planBadgeText ?? L10n.text("account.paid_badge"))
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(PoolDashboardTheme.textPrimary)
                         .padding(.horizontal, 8)
@@ -1125,6 +1128,18 @@ struct AccountUsagePanelView: View {
         draftAccountNames[account.id] = nil
         if focusedAccountNameID == account.id {
             focusedAccountNameID = nil
+        }
+    }
+
+    @ViewBuilder
+    private func accountSubscriptionRecord(_ account: AgentAccount) -> some View {
+        if let subscription = SubscriptionPresentationFormatter.presentation(for: account) {
+            Text(subscription.text)
+                .font(.caption)
+                .foregroundStyle(PoolDashboardTheme.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+                .help(subscription.detail)
+                .accessibilityLabel(subscription.text + ". " + subscription.detail)
         }
     }
 

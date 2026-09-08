@@ -124,6 +124,7 @@ struct ReadmeMenuBarScreenshotGenerationTests {
                 usageWindowResetAt: date(year: 2026, month: 7, day: 7, hour: 9, minute: 55),
                 primaryUsagePercent: 6,
                 primaryUsageResetAt: date(year: 2026, month: 7, day: 1, hour: 12, minute: 9),
+                oauthIDToken: mockSubscriptionToken(accountID: "acct_demo_pro", until: "2026-07-31T20:30:07Z"),
                 isPaid: true,
                 planType: "pro",
                 rateLimitResetCreditsAvailableCount: 2,
@@ -147,6 +148,7 @@ struct ReadmeMenuBarScreenshotGenerationTests {
                 usageWindowResetAt: date(year: 2026, month: 7, day: 8, hour: 11, minute: 56),
                 primaryUsagePercent: 1,
                 primaryUsageResetAt: date(year: 2026, month: 7, day: 2, hour: 16, minute: 7),
+                oauthIDToken: mockSubscriptionToken(accountID: "acct_demo_plus", until: "2026-06-30T20:30:07Z"),
                 isPaid: true,
                 planType: "plus",
                 rateLimitResetCreditsAvailableCount: 1,
@@ -173,10 +175,19 @@ struct ReadmeMenuBarScreenshotGenerationTests {
         ]
     }
 
+    private static func mockSubscriptionToken(accountID: String, until: String) -> String {
+        let data = try! JSONSerialization.data(withJSONObject: ["https://api.openai.com/auth": [
+            "chatgpt_account_id": accountID, "chatgpt_subscription_active_until": until
+        ]])
+        let payload = data.base64EncodedString().replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+        return "header.\(payload).signature"
+    }
+
     private static let activeAccountID = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
     private static let referenceNow = date(year: 2026, month: 7, day: 3, hour: 0, minute: 0)
 
-    private static func renderPNG<V: View>(
+    static func renderPNG<V: View>(
         _ rootView: V,
         size: CGSize,
         dark: Bool

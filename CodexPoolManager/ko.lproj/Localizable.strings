@@ -651,3 +651,9 @@
 "switch.service.log.routing_preserved" = "기존 라우팅 설정을 유지했습니다.";
 
 "menu_bar.reset_credit.count_format" = "%d회 사용 가능";
+
+"account.subscription.record_until" = "구독 기록 기한 %@";
+"account.subscription.needs_update" = "업데이트 필요";
+"account.subscription.record_help" = "로그인 정보에 기록된 구독 기한입니다. 실시간 결제 상태나 확정된 갱신 또는 취소 날짜가 아닙니다.";
+"account.subscription.checked_at" = "기록 확인 시간: %@";
+"account.subscription.stale_help" = "기록된 날짜가 지났습니다. 다시 로그인하여 업데이트하세요. 구독이 자동 갱신되었을 수 있습니다.";

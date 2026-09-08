@@ -651,3 +651,9 @@
 "switch.service.log.routing_preserved" = "既存のルーティング設定を保持しました。";
 
 "menu_bar.reset_credit.count_format" = "%d 回利用可能";
+
+"account.subscription.record_until" = "購読記録の期限 %@";
+"account.subscription.needs_update" = "更新が必要";
+"account.subscription.record_help" = "ログイン情報に記録された購読期限です。リアルタイムの請求状態や確定した更新・解約日ではありません。";
+"account.subscription.checked_at" = "記録の確認日時：%@";
+"account.subscription.stale_help" = "記録の日付を過ぎています。再ログインして更新してください。購読は自動更新されている可能性があります。";

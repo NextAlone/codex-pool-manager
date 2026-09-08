@@ -260,6 +260,12 @@ struct OAuthIDTokenClaims: Equatable {
     }
 }
 
+/// A cached subscription claim, not a live billing or renewal status.
+struct OAuthSubscriptionRecord: Equatable {
+    let activeUntil: Date
+    let lastCheckedAt: Date?
+}
+
 enum OAuthIDTokenClaimsParser {
     private static let openAIAuthClaim = "https://api.openai.com/auth"
     private static let openAIProfileClaim = "https://api.openai.com/profile"
@@ -301,6 +307,40 @@ enum OAuthIDTokenClaimsParser {
                     ?? OAuthIDTokenClaims.nonEmpty(secondary.organizationID)
             )
         }
+    }
+
+    static func subscriptionRecord(idToken: String?, expectedAccountID: String?) -> OAuthSubscriptionRecord? {
+        guard let payload = decodeJWTPayload(idToken),
+              let auth = payload[openAIAuthClaim] as? [String: Any],
+              let activeUntil = subscriptionDate(auth["chatgpt_subscription_active_until"])
+        else { return nil }
+        if let expected = OAuthIDTokenClaims.nonEmpty(expectedAccountID),
+           extractAccountID(from: payload) != expected { return nil }
+        return OAuthSubscriptionRecord(
+            activeUntil: activeUntil,
+            lastCheckedAt: subscriptionDate(auth["chatgpt_subscription_last_checked"])
+        )
+    }
+
+    private static func subscriptionDate(_ value: Any?) -> Date? {
+        if let text = value as? String {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: text) { return date }
+            formatter.formatOptions = [.withInternetDateTime]
+            if let date = formatter.date(from: text) { return date }
+            guard let timestamp = Double(text) else { return nil }
+            return subscriptionTimestamp(timestamp)
+        }
+        guard let number = value as? NSNumber,
+              CFGetTypeID(number) != CFBooleanGetTypeID() else { return nil }
+        return subscriptionTimestamp(number.doubleValue)
+    }
+
+    private static func subscriptionTimestamp(_ timestamp: Double) -> Date? {
+        let seconds = timestamp > 100_000_000_000 ? timestamp / 1000 : timestamp
+        guard seconds.isFinite, seconds > 0, seconds < 253_402_300_800 else { return nil }
+        return Date(timeIntervalSince1970: seconds)
     }
 
     private static func decodeJWTPayload(_ token: String?) -> [String: Any]? {

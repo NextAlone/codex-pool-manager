@@ -653,7 +653,7 @@ struct ViewSmokeCoverageTests {
 
     @Test
     @MainActor
-    func accountUsagePanelViewRendersFullAndMinimalLayouts() {
+    func accountUsagePanelViewRendersFullAndMinimalLayouts() throws {
         let defaults = UserDefaults.standard
         let sortModeKey = "pool_dashboard.account_usage.sort_mode"
         let activeFirstKey = "pool_dashboard.account_usage.active_first"
@@ -701,6 +701,10 @@ struct ViewSmokeCoverageTests {
                 primaryUsageResetAt: baseDate.addingTimeInterval(300),
                 secondaryUsagePercent: 40,
                 secondaryUsageResetAt: baseDate.addingTimeInterval(600),
+                oauthIDToken: makeJWTLikeToken(payload: ["https://api.openai.com/auth": [
+                    "chatgpt_account_id": "acct-active",
+                    "chatgpt_subscription_active_until": "2026-08-31T20:30:07Z"
+                ]]),
                 isPaid: true
             ),
             AgentAccount(
@@ -817,6 +821,17 @@ struct ViewSmokeCoverageTests {
 
         renderInHostingView(makeView(layoutMode: "quad"), size: CGSize(width: 1280, height: 840))
         renderInHostingView(makeView(layoutMode: "minimal"), size: CGSize(width: 520, height: 840))
+        if let directory = ProcessInfo.processInfo.environment["CODEX_POOL_README_SCREENSHOT_OUTPUT_DIR"] {
+            let output = URL(fileURLWithPath: directory)
+            try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+            for layout in ["quad", "minimal"] {
+                let data = try ReadmeMenuBarScreenshotGenerationTests.renderPNG(
+                    makeView(layoutMode: layout).preferredColorScheme(.light),
+                    size: CGSize(width: layout == "quad" ? 1280 : 520, height: 840), dark: false)
+                try data.write(to: output.appendingPathComponent("accounts-\(layout).png"))
+            }
+        }
+
 
         #expect(addCount == 0)
         #expect(removeCount == 0)

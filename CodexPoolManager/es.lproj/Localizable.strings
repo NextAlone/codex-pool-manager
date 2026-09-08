@@ -651,3 +651,9 @@
 "switch.service.log.routing_preserved" = "Se conservó la configuración de rutas existente.";
 
 "menu_bar.reset_credit.count_format" = "%d disponibles";
+
+"account.subscription.record_until" = "Suscripción registrada hasta %@";
+"account.subscription.needs_update" = "Actualizar";
+"account.subscription.record_help" = "Vigencia registrada al iniciar sesión; no es el estado de facturación en tiempo real ni una fecha confirmada de renovación o cancelación.";
+"account.subscription.checked_at" = "Registro comprobado: %@";
+"account.subscription.stale_help" = "Esta fecha ya pasó. Inicia sesión de nuevo para actualizarla; la suscripción puede haberse renovado.";

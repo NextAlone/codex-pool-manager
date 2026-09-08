@@ -651,3 +651,9 @@
 "switch.service.log.routing_preserved" = "La configuration de routage existante a été conservée.";
 
 "menu_bar.reset_credit.count_format" = "%d disponibles";
+
+"account.subscription.record_until" = "Abonnement enregistré jusqu’au %@";
+"account.subscription.needs_update" = "À actualiser";
+"account.subscription.record_help" = "Validité enregistrée lors de la connexion, et non un état de facturation en temps réel ni une date de renouvellement ou de résiliation confirmée.";
+"account.subscription.checked_at" = "Vérification du relevé : %@";
+"account.subscription.stale_help" = "Cette date est passée. Reconnectez-vous pour actualiser le relevé ; votre abonnement a peut-être été renouvelé.";
