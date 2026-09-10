@@ -4,6 +4,10 @@ struct WorkspaceSettingsPanelView: View {
     @AppStorage(CodexAuthSwitchService.preserveRoutingPreferenceKey)
     private var preserveRouting = CodexAuthSwitchService.preserveRoutingDefault
 
+    @AppStorage(UsageInsightsSettings.workDaysKey) private var forecastWorkDays = 0
+    @AppStorage(UsageInsightsSettings.resetReminderKey) private var resetExpiryReminder = true
+    @AppStorage(UsageInsightsSettings.serviceStatusKey) private var officialServiceStatus = true
+
     let switchWithoutLaunchingBinding: Binding<Bool>
     let launchTargetBinding: Binding<String>
     let autoSyncEnabledBinding: Binding<Bool>
@@ -126,6 +130,22 @@ struct WorkspaceSettingsPanelView: View {
                     .pickerStyle(.menu)
                     .tint(PoolDashboardTheme.glowA)
                 }
+                .dashboardInfoCard()
+
+                VStack(alignment: .leading, spacing: PoolDashboardTheme.compactFieldSpacing) {
+                    Toggle(L10n.text("insights.reset_setting"), isOn: $resetExpiryReminder)
+                    Text(L10n.text("insights.reset_hint")).font(.caption).foregroundStyle(.secondary)
+                    Picker(L10n.text("insights.forecast_setting"), selection: $forecastWorkDays) {
+                        Text(L10n.text("insights.automatic")).tag(0)
+                        ForEach([4, 5, 7], id: \.self) { days in
+                            Text(L10n.text("insights.workdays", days)).tag(days)
+                        }
+                    }
+                    Text(L10n.text("insights.forecast_hint")).font(.caption).foregroundStyle(.secondary)
+                    Toggle(L10n.text("insights.status_setting"), isOn: $officialServiceStatus)
+                    Text(L10n.text("insights.status_hint")).font(.caption).foregroundStyle(.secondary)
+                }
+                .toggleStyle(.switch)
                 .dashboardInfoCard()
 
                 VStack(alignment: .leading, spacing: PoolDashboardTheme.compactFieldSpacing) {

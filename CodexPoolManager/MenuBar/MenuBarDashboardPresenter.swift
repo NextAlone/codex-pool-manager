@@ -102,7 +102,8 @@ enum MenuBarDashboardPresenter {
         isSyncing: Bool,
         lastSyncError: String?,
         now: Date = Date(),
-        accountOrderSettings: MenuBarAccountOrderSettings = .fromDashboardDefaults()
+        accountOrderSettings: MenuBarAccountOrderSettings = .fromDashboardDefaults(),
+        workDays: Int? = nil, history: [UsageAnalyticsRecord] = []
     ) -> MenuBarDashboardSnapshot {
         let orderedAccounts = orderedAccounts(
             state.accounts,
@@ -110,7 +111,7 @@ enum MenuBarDashboardPresenter {
             settings: accountOrderSettings
         )
         let accountRows = orderedAccounts.map { account in
-            makeAccountRow(account, activeAccountID: state.activeAccountID, now: now)
+            makeAccountRow(account, activeAccountID: state.activeAccountID, now: now, workDays: workDays, history: history)
         }
         let activeAccount = state.activeAccount.flatMap { active in
             accountRows.first(where: { $0.id == active.id })
@@ -171,7 +172,7 @@ enum MenuBarDashboardPresenter {
     private static func makeAccountRow(
         _ account: AgentAccount,
         activeAccountID: UUID?,
-        now: Date
+        now: Date, workDays: Int?, history: [UsageAnalyticsRecord]
     ) -> MenuBarAccountRow {
         let resetCredit = ResetCreditPresentationFormatter.presentation(for: account)
 
@@ -195,7 +196,7 @@ enum MenuBarDashboardPresenter {
             fiveHourResetText: account.isPaid ? resetText(for: account.primaryUsageResetAt) : nil,
             warningText: account.usageSyncError,
             subscription: SubscriptionPresentationFormatter.presentation(for: account, now: now),
-            usageWindows: usageWindows(for: account, now: now),
+            usageWindows: usageWindows(for: account, now: now, workDays: workDays, history: history),
             resetCreditCount: account.rateLimitResetCreditsAvailableCount,
             resetCreditCountdown: account.rateLimitResetCreditEstimatedExpiries.isEmpty ? nil :
                 (account.rateLimitResetCreditExpirySource == .api ? "" : "≈ ") +
@@ -203,14 +204,18 @@ enum MenuBarDashboardPresenter {
         )
     }
 
-    static func usageWindows(for account: AgentAccount, now: Date) -> [MenuBarUsageWindow] {
+    static func usageWindows(for account: AgentAccount, now: Date, workDays: Int? = nil, history: [UsageAnalyticsRecord] = []) -> [MenuBarUsageWindow] {
         guard !account.isRelayAPIKeyAccount else { return [] }
         let allowsPace = !account.isUsageSyncExcluded && (account.usageSyncError?.isEmpty != false)
         func window(id: String, title: String, remaining: Int, reset: Date?, minutes: Int) -> MenuBarUsageWindow {
-            MenuBarUsageWindow(id: id, title: L10n.text(title), remainingPercent: remaining,
+            let historical = id == "weekly" && workDays == nil ? reset.flatMap {
+                HistoricalUsageForecast.make(records: history, accountKey: account.usageAnalyticsAccountKey,
+                    usedPercent: Double(100 - remaining), resetsAt: $0, now: now)
+            } : nil
+            return MenuBarUsageWindow(id: id, title: L10n.text(title), remainingPercent: remaining,
                 resetText: CodexBarCountdown.resetText(date: reset, now: now),
                 pace: allowsPace ? CodexBarPacePresentation.make(usedPercent: Double(100 - remaining),
-                    resetsAt: reset, windowMinutes: minutes, now: now, isSession: id == "5h") : nil)
+                    resetsAt: reset, windowMinutes: minutes, now: now, isSession: id == "5h", workDays: workDays, historical: historical) : nil)
         }
         var windows: [MenuBarUsageWindow] = []
         if let usage = account.primaryUsagePercent {

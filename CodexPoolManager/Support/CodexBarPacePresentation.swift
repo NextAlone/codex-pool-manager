@@ -8,12 +8,13 @@ struct CodexBarPacePresentation: Equatable {
     let isInReserve: Bool
 
     static func make(usedPercent: Double, resetsAt: Date?, windowMinutes: Int, now: Date,
-                     isSession: Bool) -> CodexBarPacePresentation? {
+                     isSession: Bool, workDays: Int? = nil, historical: HistoricalUsageForecast? = nil) -> CodexBarPacePresentation? {
         // CodexBar hides forecasts until 3% of the window has elapsed and once quota is exhausted.
         guard usedPercent.isFinite, usedPercent < 100,
-              let pace = CodexBarUsagePace.weekly(window: CodexBarRateWindow(
-                usedPercent: usedPercent, windowMinutes: windowMinutes, resetsAt: resetsAt), now: now),
-              pace.expectedUsedPercent >= 3 else { return nil }
+              let linear = CodexBarUsagePace.weekly(window: CodexBarRateWindow(
+                usedPercent: usedPercent, windowMinutes: windowMinutes, resetsAt: resetsAt), now: now, workDays: workDays),
+              linear.expectedUsedPercent >= 3 else { return nil }
+        let pace = historical?.pace ?? linear
         let delta = Int(abs(pace.deltaPercent).rounded())
         let left: String
         switch pace.stage {
@@ -38,8 +39,11 @@ struct CodexBarPacePresentation: Equatable {
             right = duration == "now" ? L10n.text("codexbar." + key + "_now")
                 : L10n.text("codexbar." + key, duration)
         }
+        let basis: String? = isSession ? nil : historical.map { L10n.text("insights.historical", $0.cycleCount) }
+            ?? workDays.map { L10n.text("insights.workdays", $0) }
+            ?? L10n.text("insights.insufficient_history")
         return CodexBarPacePresentation(
-            text: [left, right].compactMap { $0 }.joined(separator: " · "),
+            text: [left, right, basis].compactMap { $0 }.joined(separator: " · "),
             expectedRemainingPercent: pace.stage == .onTrack ? nil : 100 - pace.expectedUsedPercent,
             isInReserve: pace.actualUsedPercent <= pace.expectedUsedPercent)
     }

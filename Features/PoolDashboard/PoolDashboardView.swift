@@ -3650,6 +3650,10 @@ struct PoolDashboardView: View {
     @MainActor
     @discardableResult
     private func updateUsageAnalyticsAfterSync(now: Date) -> Bool {
+        if runtimeModel != nil {
+            if usageAnalyticsStateLoaded || selectedWorkspaceUsesUsageAnalytics { loadUsageAnalyticsStateFromStorage() }
+            return true
+        }
         guard usageAnalyticsStateLoaded || selectedWorkspaceUsesUsageAnalytics else { return false }
         ensureUsageAnalyticsStateLoaded()
         usageAnalyticsState = UsageAnalyticsEngine.update(
@@ -7492,12 +7496,28 @@ private struct UsageAnalyticsStableDetailSectionsView: View, Equatable {
     }
 }
 
-private enum DesktopNotifier {
+enum DesktopNotifier {
     private static let lock = NSLock()
     private static var didRequestAuthorization = false
     private static var didConfigureCenter = false
     private static var lastSentAtByKey: [String: Date] = [:]
     private static let delegate = NotificationCenterDelegate()
+
+    static func deliverExpiryReminder(_ reminder: ResetExpiryReminder) async throws -> Bool {
+        configureCenterIfNeeded()
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        if settings.authorizationStatus == .notDetermined {
+            guard try await center.requestAuthorization(options: [.alert, .sound]) else { return false }
+        } else if settings.authorizationStatus == .denied { return false }
+        let content = UNMutableNotificationContent()
+        content.title = L10n.text("insights.reset_title")
+        content.body = reminder.body
+        content.sound = .default
+        try await center.add(UNNotificationRequest(identifier: "codexpool.expiry." + reminder.key,
+            content: content, trigger: nil))
+        return true
+    }
 
     static func requestAuthorizationIfNeeded() {
         configureCenterIfNeeded()

@@ -20,7 +20,7 @@ struct ReadmeMenuBarScreenshotGenerationTests {
     private static let generationMarkerFileName = ".generate-readme-menu-bar-screenshots"
 
     @Test
-    func generatesLocalizedMenuBarScreenshotsWhenRequested() throws {
+    func generatesLocalizedMenuBarScreenshotsWhenRequested() async throws {
         guard ProcessInfo.processInfo.environment[Self.generationFlag] == "1"
             || FileManager.default.fileExists(atPath: Self.generationMarkerURL.path)
         else {
@@ -68,6 +68,10 @@ struct ReadmeMenuBarScreenshotGenerationTests {
                 relaySwitchRunner: { _ in .success("mock") },
                 defaults: Self.isolatedDefaults()
             )
+            model.statusFetcher = { date in
+                OfficialServiceStatus(message: "All Systems Operational", hasIncident: false, checkedAt: date)
+            }
+            await model.refreshInsights(now: Self.referenceNow)
             model.bootstrapIfNeeded()
 
             for dark in [false, true] {
@@ -97,6 +101,15 @@ struct ReadmeMenuBarScreenshotGenerationTests {
                             size: CGSize(width: 1100, height: 800), dark: dark)
                         try pagePNG.write(to: outputDirectory.appendingPathComponent("dashboard-\(page)-\(dark ? "dark" : "light").png"))
                     }
+                    let history = [3, 8, 5, 12, 4, 9].enumerated().map { index, usage in
+                        UsageAnalyticsRecord(timestamp: Self.referenceNow.addingTimeInterval(-Double(index) * 86_400),
+                            accountKey: "preview", weeklyDeltaPercent: usage, fiveHourDeltaPercent: 0)
+                    }
+                    let historyView = MenuBarDashboardView.debugUsageHistoryView(records: history, now: Self.referenceNow)
+                        .background(Color(nsColor: .windowBackgroundColor))
+                        .preferredColorScheme(dark ? .dark : .light)
+                    let historyPNG = try Self.renderPNG(historyView, size: CGSize(width: 320, height: 260), dark: dark)
+                    try historyPNG.write(to: outputDirectory.appendingPathComponent("history-\(dark ? "dark" : "light").png"))
                     var referenceRow = model.menuBarSnapshot.accountRows[0]
                     referenceRow.subscription = nil
                     referenceRow.usageWindows = referenceRow.usageWindows.filter { $0.id == "weekly" }
@@ -298,6 +311,7 @@ struct ReadmeMenuBarScreenshotGenerationTests {
         let suiteName = "CodexPoolManager.ReadmeScreenshot.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defaults.removePersistentDomain(forName: suiteName)
+        defaults.set(false, forKey: UsageInsightsSettings.resetReminderKey)
         defaults.set(true, forKey: MenuBarAccountOrderSettings.activeAccountFirstKey)
         defaults.set(true, forKey: MenuBarAccountOrderSettings.paidAccountFirstKey)
         defaults.set(true, forKey: MenuBarAccountOrderSettings.apiKeyAccountLastKey)

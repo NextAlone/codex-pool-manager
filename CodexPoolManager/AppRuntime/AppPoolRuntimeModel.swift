@@ -58,6 +58,26 @@ final class AppPoolRuntimeModel: ObservableObject {
     @Published private(set) var lastSwitchMessage: String?
     @Published private(set) var menuBarNow: Date
 
+    @Published private(set) var usageHistory: [UsageAnalyticsRecord] = []
+    @Published private(set) var historyError: String?
+    @Published private(set) var reminderError: String?
+    var insightError: String? { historyError ?? reminderError }
+    @Published private(set) var officialStatus: OfficialServiceStatus?
+    @Published private(set) var officialStatusError: String?
+    private var lastStatusAttempt: Date?
+    private var insightsTask: Task<Void, Never>?
+    var statusFetcher: (Date) async throws -> OfficialServiceStatus = { try await OfficialServiceStatus.fetch(now: $0) }
+    var reminderSender: (ResetExpiryReminder) async throws -> Bool = { try await DesktopNotifier.deliverExpiryReminder($0) }
+
+    var forecastWorkDays: Int? {
+        let value = defaults.integer(forKey: UsageInsightsSettings.workDaysKey)
+        return [4, 5, 7].contains(value) ? value : nil
+    }
+
+    var showsOfficialStatus: Bool {
+        UsageInsightsSettings.enabled(UsageInsightsSettings.serviceStatusKey, defaults: defaults)
+    }
+
     private let store: AccountPoolStoring
     private let syncRunner: SyncRunner
     private let officialSwitchRunner: OfficialSwitchRunner
@@ -80,7 +100,8 @@ final class AppPoolRuntimeModel: ObservableObject {
             from: state,
             isSyncing: isSyncingUsage,
             lastSyncError: lastSyncError,
-            now: menuBarNow
+            now: menuBarNow,
+            workDays: forecastWorkDays, history: usageHistory
         )
     }
 
@@ -153,6 +174,7 @@ final class AppPoolRuntimeModel: ObservableObject {
     deinit {
         autoSyncTask?.cancel()
         menuBarClockTask?.cancel()
+        insightsTask?.cancel()
     }
 
     func load() {
@@ -174,6 +196,8 @@ final class AppPoolRuntimeModel: ObservableObject {
         }
         startAutoSyncIfNeeded()
         startMenuBarClockIfNeeded()
+        loadUsageHistory()
+        refreshInsightsIfNeeded()
     }
 
     func replaceStateFromDashboard(_ nextState: AccountPoolState) {
@@ -277,6 +301,7 @@ final class AppPoolRuntimeModel: ObservableObject {
                 try? await Task.sleep(nanoseconds: interval)
                 guard !Task.isCancelled, let self else { return }
                 self.menuBarNow = self.menuBarNowProvider()
+                self.refreshInsightsIfNeeded()
             }
         }
     }
@@ -365,7 +390,9 @@ final class AppPoolRuntimeModel: ObservableObject {
         state = output.state
         stateRevision += 1
         lastSyncError = nil
+        recordUsageHistory(now: state.lastUsageSyncAt ?? menuBarNowProvider())
         saveAndPublish()
+        refreshInsightsIfNeeded()
         return publishSyncOutcome(
             status: .success,
             previousState: previousState,
@@ -487,6 +514,83 @@ final class AppPoolRuntimeModel: ObservableObject {
         activeSyncID = nil
         activeSyncOrigin = nil
         isSyncingUsage = false
+    }
+
+    private func readUsageHistory() throws -> UsageAnalyticsState {
+        guard let raw = defaults.string(forKey: UsageInsightsSettings.historyKey), !raw.isEmpty else {
+            return UsageAnalyticsState()
+        }
+        return try JSONDecoder().decode(UsageAnalyticsState.self, from: Data(raw.utf8))
+    }
+
+    private func loadUsageHistory() {
+        do { usageHistory = try readUsageHistory().records }
+        catch { historyError = L10n.text("insights.history_error") }
+    }
+
+    private func recordUsageHistory(now: Date) {
+        do {
+            let previous = try readUsageHistory()
+            let eligible = state.accounts.filter {
+                !$0.isRelayAPIKeyAccount && !$0.isUsageSyncExcluded && $0.usageSyncError?.isEmpty != false
+            }
+            let limit = defaults.object(forKey: "pool_dashboard.usage_analytics.max_stored_records") as? Int
+                ?? UsageAnalyticsEngine.defaultMaxStoredRecords
+            let next = UsageAnalyticsEngine.update(state: previous, accounts: eligible,
+                activeAccountKey: state.activeAccount?.usageAnalyticsAccountKey, now: now, maxStoredRecords: limit)
+            let data = try JSONEncoder().encode(next)
+            defaults.set(String(decoding: data, as: UTF8.self), forKey: UsageInsightsSettings.historyKey)
+            usageHistory = next.records
+            historyError = nil
+        } catch { historyError = L10n.text("insights.history_error") }
+    }
+
+    func refreshInsightsIfNeeded() {
+        guard insightsTask == nil else { return }
+        insightsTask = Task { [weak self] in
+            guard let self else { return }
+            await self.refreshInsights(now: self.menuBarNow)
+            self.insightsTask = nil
+        }
+    }
+
+    func refreshInsights(now: Date) async {
+        if UsageInsightsSettings.enabled(UsageInsightsSettings.resetReminderKey, defaults: defaults),
+           let syncAt = state.lastUsageSyncAt, now.timeIntervalSince(syncAt) >= 0,
+           now.timeIntervalSince(syncAt) < 3600 {
+            var delivered = (defaults.dictionary(forKey: UsageInsightsSettings.deliveredKey) as? [String: Double] ?? [:])
+                .filter { $0.value > now.timeIntervalSince1970 }
+            for reminder in ResetExpiryReminder.pending(accounts: state.accounts, now: now) where delivered[reminder.key] == nil {
+                do {
+                    if try await reminderSender(reminder) {
+                        reminderError = nil
+                        delivered[reminder.key] = reminder.expiry.timeIntervalSince1970
+                        defaults.set(delivered, forKey: UsageInsightsSettings.deliveredKey)
+                    } else {
+                        reminderError = L10n.text("insights.notification_denied")
+                        break
+                    }
+                } catch { reminderError = L10n.text("insights.notification_error"); break }
+            }
+        }
+        if !UsageInsightsSettings.enabled(UsageInsightsSettings.resetReminderKey, defaults: defaults) { reminderError = nil }
+        guard showsOfficialStatus else {
+            officialStatus = nil
+            officialStatusError = nil
+            lastStatusAttempt = nil
+            return
+        }
+        guard lastStatusAttempt.map({ now.timeIntervalSince($0) >= 300 }) ?? true else { return }
+        lastStatusAttempt = now
+        do {
+            let result = try await statusFetcher(now)
+            guard showsOfficialStatus, !Task.isCancelled else { return }
+            officialStatus = result
+            officialStatusError = nil
+        } catch {
+            guard showsOfficialStatus, !Task.isCancelled else { return }
+            officialStatusError = L10n.text("insights.status_error")
+        }
     }
 
     private func saveAndPublish() {

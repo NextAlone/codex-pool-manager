@@ -681,3 +681,28 @@
 "workspace.overview.subtitle" = "查看额度与订阅记录，管理当前账号";
 "workspace.sidebar.toggle" = "切换侧边栏";
 "workspace.add_account" = "添加账号";
+
+// Usage history, reset expiry, and official service status.
+"insights.approximate" = "约 ";
+"insights.reset_body" = "%@：%d 次重置将在 %@%@ 到期。";
+"insights.reset_title" = "重置次数即将到期";
+"insights.historical" = "历史预测 · %d 个周期";
+"insights.workdays" = "每周 %d 天";
+"insights.insufficient_history" = "历史不足 · 均匀预测";
+"insights.history_error" = "无法读取或保存用量历史；原记录已保留，请检查用量统计设置。";
+"insights.notification_denied" = "到期提醒未获通知权限，请在系统设置 → 通知中允许本应用。";
+"insights.notification_error" = "到期通知发送失败，将在下次检查时重试。";
+"insights.status_error" = "官方状态暂时无法更新；上次结果不代表当前状态。";
+"insights.reset_setting" = "重置次数到期提醒";
+"insights.reset_hint" = "到期前 24 小时提醒一次；需通知权限，应用须保持运行。估算日期带“约”标记。";
+"insights.forecast_setting" = "周用量预测";
+"insights.automatic" = "自动（优先历史）";
+"insights.forecast_hint" = "自动模式需至少 2 个覆盖充分的历史周期。4 天按周一至周四，5 天按周一至周五，7 天按每天；使用本地时区。预测仅供参考。";
+"insights.status_setting" = "官方服务故障提示";
+"insights.status_hint" = "每 5 分钟读取 OpenAI 公共状态页，菜单栏可查看详情。不包含账户信息。";
+"insights.status_title" = "OpenAI 整体服务状态";
+"insights.status_loading" = "正在检查官方状态…";
+"insights.checked_at" = "检查于 %@";
+"insights.history_title" = "最近 14 天用量";
+"insights.history_empty" = "暂无记录，后续用量同步会自动积累历史。";
+"insights.history_hint" = "柱形表示同步观测到的周额度消耗（百分点）。未观测时段不等于零用量；重置不会计入消耗。";

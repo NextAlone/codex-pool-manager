@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct MenuBarDashboardView: View {
     @ObservedObject var runtimeModel: AppPoolRuntimeModel
@@ -13,6 +14,30 @@ struct MenuBarDashboardView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
+                    if runtimeModel.showsOfficialStatus {
+                        Link(destination: OfficialServiceStatus.pageURL) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Label(L10n.text("insights.status_title"), systemImage: runtimeModel.officialStatus?.hasIncident == true
+                                    ? "exclamationmark.triangle.fill" : "network")
+                                Text(runtimeModel.officialStatusError ?? runtimeModel.officialStatus?.message
+                                    ?? L10n.text("insights.status_loading"))
+                                    .lineLimit(3)
+                                if let status = runtimeModel.officialStatus {
+                                    Text(L10n.text("insights.checked_at", status.checkedAt.formatted(date: .omitted, time: .shortened)))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .font(.caption)
+                            .foregroundStyle(runtimeModel.officialStatusError != nil || runtimeModel.officialStatus?.hasIncident == true
+                                ? Color.orange : Color.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                        }.buttonStyle(.plain)
+                        Divider()
+                    }
+                    if let error = runtimeModel.insightError {
+                        Text(error).font(.caption).foregroundStyle(.orange).padding(12)
+                    }
                     if snapshot.accountRows.isEmpty {
                         Text(L10n.text("menu_bar.empty.message"))
                             .foregroundStyle(.secondary)
@@ -21,7 +46,9 @@ struct MenuBarDashboardView: View {
                     ForEach(Array(snapshot.accountRows.enumerated()), id: \.element.id) { index, row in
                         AccountRowView(row: row, number: index + 1, updatedText: snapshot.updatedText,
                             isSwitching: runtimeModel.switchingAccountID != nil,
-                            switchAccount: switchAccount)
+                            history: runtimeModel.usageHistory.filter { record in
+                                runtimeModel.state.accounts.first(where: { $0.id == row.id })?.usageAnalyticsAccountKey == record.accountKey
+                            }, switchAccount: switchAccount)
                         Divider().padding(.horizontal, CodexBarMenuStyle.horizontalPadding)
                     }
                 }
@@ -79,10 +106,12 @@ private struct AccountRowView: View {
     @State private var isAccountWarningPopoverPresented = false
     @State private var isResetCreditNotePopoverPresented = false
     @State private var isSubscriptionPopoverPresented = false
+    @State private var isHistoryPresented = false
     let row: MenuBarAccountRow
     var number: Int = 1
     var updatedText: String = ""
     var isSwitching = false
+    var history: [UsageAnalyticsRecord] = []
     let switchAccount: (UUID) -> Void
 
     var body: some View {
@@ -100,6 +129,11 @@ private struct AccountRowView: View {
                 }
                 if row.usageWindows.isEmpty {
                     Text("—").font(.footnote).foregroundStyle(CodexBarMenuStyle.secondary)
+                }
+                if !row.usageWindows.isEmpty {
+                    Button(L10n.text("insights.history_title")) { isHistoryPresented = true }
+                        .font(.caption).buttonStyle(.plain).foregroundStyle(.secondary)
+                        .popover(isPresented: $isHistoryPresented) { UsageHistoryPopover(records: history) }
                 }
                 if let count = row.resetCreditCount, count > 0 {
                     Divider()
@@ -251,7 +285,8 @@ private struct CodexBarMetricRow: View {
             if let pace = window.pace {
                 Text(pace.text)
                     .font(.footnote).foregroundStyle(CodexBarMenuStyle.secondary)
-                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                    .help(pace.text)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -351,6 +386,11 @@ extension MenuBarDashboardView {
     }
 
     @MainActor
+    static func debugUsageHistoryView(records: [UsageAnalyticsRecord], now: Date) -> some View {
+        UsageHistoryPopover(records: records, now: now)
+    }
+
+    @MainActor
     static func debugWarningsPopoverView(rows: [MenuBarWarningRow]) -> some View {
         WarningsPopoverView(rows: rows)
     }
@@ -366,3 +406,27 @@ extension MenuBarDashboardView {
     }
 }
 #endif
+
+private struct UsageHistoryPopover: View {
+    let records: [UsageAnalyticsRecord]
+    var now = Date()
+    private var days: [(date: Date, usage: Int)] {
+        let calendar = Calendar.current
+        let start = calendar.date(byAdding: .day, value: -13, to: calendar.startOfDay(for: now)) ?? now
+        let groups = Dictionary(grouping: records.filter { $0.timestamp >= start && $0.timestamp <= now }, by: { calendar.startOfDay(for: $0.timestamp) })
+        return groups.map { (date: $0.key, usage: $0.value.reduce(0) { $0 + $1.weeklyDeltaPercent }) }
+            .sorted { $0.date < $1.date }
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.text("insights.history_title")).font(.headline)
+            if days.isEmpty { Text(L10n.text("insights.history_empty")).foregroundStyle(.secondary) }
+            else {
+                Chart(days, id: \.date) { day in
+                    BarMark(x: .value("Date", day.date, unit: .day), y: .value("%", day.usage))
+                }.frame(height: 150)
+            }
+            Text(L10n.text("insights.history_hint")).font(.caption).foregroundStyle(.secondary)
+        }.padding(16).frame(width: 320)
+    }
+}

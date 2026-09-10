@@ -689,3 +689,28 @@
 "workspace.overview.subtitle" = "Usage, subscription records and account switching";
 "workspace.sidebar.toggle" = "Toggle sidebar";
 "workspace.add_account" = "Add account";
+
+// Usage history, reset expiry, and official service status.
+"insights.approximate" = "approximately ";
+"insights.reset_body" = "%@: %d resets expire %@%@.";
+"insights.reset_title" = "Reset credits expire soon";
+"insights.historical" = "History · %d cycles";
+"insights.workdays" = "%d days per week";
+"insights.insufficient_history" = "Insufficient history · linear estimate";
+"insights.history_error" = "Cannot read or save usage history. Original data preserved; check analytics settings.";
+"insights.notification_denied" = "Expiry alerts need notification permission. Allow this app in System Settings → Notifications.";
+"insights.notification_error" = "Could not deliver expiry notification. The next check will retry.";
+"insights.status_error" = "Official status unavailable. Previous results may be stale.";
+"insights.reset_setting" = "Reset expiry reminders";
+"insights.reset_hint" = "Notify once within 24 hours of expiry. Requires notifications and a running app. Estimated dates are labeled.";
+"insights.forecast_setting" = "Weekly usage forecast";
+"insights.automatic" = "Automatic (prefer history)";
+"insights.forecast_hint" = "Automatic needs at least 2 well-observed cycles. 4 days: Mon–Thu; 5: Mon–Fri; 7: every day, in local time. Estimates only.";
+"insights.status_setting" = "Official service status";
+"insights.status_hint" = "Read the public OpenAI status page every 5 minutes. View details in the menu. No account data is sent.";
+"insights.status_title" = "OpenAI overall service status";
+"insights.status_loading" = "Checking official status…";
+"insights.checked_at" = "Checked at %@";
+"insights.history_title" = "Usage over the last 14 days";
+"insights.history_empty" = "No records yet. Usage sync will collect history.";
+"insights.history_hint" = "Bars show observed weekly-quota consumption in percentage points. Unobserved periods are not zero usage; resets are excluded.";
